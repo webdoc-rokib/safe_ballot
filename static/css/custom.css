@@ -1,0 +1,70 @@
+/* Custom styles for SafeBallot */
+
+
+:root{
+  --brand:#0d6efd;
+  --muted: #6c757d;
+  --bg1: linear-gradient(120deg, #0f172a 0%, #0b1220 100%);
+  --card-bg: rgba(255,255,255,0.03);
+  --accent: #7c3aed;
+}
+
+body.bg-gradient{
+  background: linear-gradient(180deg, rgba(13,110,253,0.06), rgba(124,58,237,0.02));
+  color: #0f172a;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* make layout fill viewport and keep footer at bottom */
+html, body {
+  height: 100%;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+main {
+  flex: 1 0 auto;
+}
+
+.navbar-brand { font-weight: 700; letter-spacing: .2px; }
+.hero { background: linear-gradient(90deg, rgba(13,110,253,0.9), rgba(124,58,237,0.85)); }
+.hero h1, .hero p { color: #fff; }
+
+.card { border: none; background: var(--card-bg); border-radius: .75rem; }
+.card h4 { font-size: 1.05rem; margin-bottom: .5rem; }
+
+.footer { border-top: 1px solid rgba(255,255,255,0.04); }
+
+/* ensure footer content is vertically centered and responsive */
+.footer .container { display: flex; gap: 1.5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.footer h5, .footer h6 { margin-bottom: .5rem; }
+.footer .col-md-5, .footer .col-md-3, .footer .col-md-4 { padding-top: .5rem; padding-bottom: .5rem; }
+
+.hover-lift { transition: transform .18s ease, box-shadow .18s ease; }
+.hover-lift:hover { transform: translateY(-6px); box-shadow: 0 8px 30px rgba(12, 74, 173, 0.12); }
+
+.btn-primary { background: var(--brand); border-color: var(--brand); }
+.btn-outline-light { border-color: rgba(255,255,255,0.12); color: #fff; }
+
+.form-control { padding: .75rem 1rem; border-radius: .6rem; }
+.form-label { font-weight: 600; }
+
+.alert { border-radius: .6rem; }
+
+.vote-card { transition: transform .12s; cursor:pointer; }
+.vote-card:hover { transform: translateY(-4px); box-shadow: 0 6px 20px rgba(12,74,173,0.08); }
+
+.vote-success {
+  animation: pop .28s ease;
+}
+@keyframes pop {
+  0%{ transform: scale(.96); opacity:0; }
+  100%{ transform: scale(1); opacity:1; }
+}
+
+/* footer small */
+.footer a { text-decoration: none; }
+.footer .small { opacity: .9; }
+

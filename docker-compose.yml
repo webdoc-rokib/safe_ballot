@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: safeballot_db
+      POSTGRES_USER: safeballot_user
+      POSTGRES_PASSWORD: safeballot_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  web:
+    build: .
+    # Use env_file for local development (do NOT commit .env)
+    # In production use your platform's secret store or CI-injected env vars
+    env_file:
+      - .env
+    entrypoint: ["/bin/bash", "/app/scripts/entrypoint.sh"]
+    command: ["gunicorn", "safeballot.wsgi:application", "--bind", "0.0.0.0:8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_NAME: safeballot_db
+      DATABASE_USER: safeballot_user
+      DATABASE_PASSWORD: safeballot_pass
+      DATABASE_HOST: db
+      # AES_KEY_HEX should be provided via .env or secret manager; do not hardcode it here
+      SEED_DEMO: 'false'
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+      - media_data:/app/media
+volumes:
+  postgres_data:
+  media_data:

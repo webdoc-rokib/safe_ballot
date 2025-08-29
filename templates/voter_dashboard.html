@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">Your Elections</h2>
+<div class="row g-3">
+  {% for s in statuses %}
+    <div class="col-md-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title"><i data-feather="calendar" class="icon"></i>{{ s.election.title }}</h5>
+          <p class="text-muted mb-2">Ends: {{ s.election.end_time }}</p>
+          <div class="mt-auto">
+            {% if not s.has_voted %}
+              <a href="{% url 'vote' s.election.id %}" class="btn btn-primary me-2"><i data-feather="check-circle" class="icon"></i>Vote</a>
+            {% else %}
+              <span class="badge bg-success me-2">Voted</span>
+            {% endif %}
+            <a href="{% url 'results' s.election.id %}" class="btn btn-link"><i data-feather="bar-chart-2" class="icon"></i>Results</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12"><div class="alert alert-info">No elections available</div></div>
+  {% endfor %}
+</div>
+{% endblock %}

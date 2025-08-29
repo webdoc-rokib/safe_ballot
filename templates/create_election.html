@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Create Election — SafeBallot{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+	<div class="col-lg-8 col-md-10">
+			<div class="card p-4 shadow-sm">
+			<h2 class="mb-3">Create Election</h2>
+			<form method="post" novalidate class="js-datetime-utc">
+				{% csrf_token %}
+				<div class="mb-3">
+					<label class="form-label">Title</label>
+					{{ form.title }}
+					{% if form.title.errors %}
+						<div class="form-text text-danger">{{ form.title.errors }}</div>
+					{% endif %}
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">Description</label>
+					{{ form.description }}
+					{% if form.description.errors %}
+						<div class="form-text text-danger">{{ form.description.errors }}</div>
+					{% endif %}
+				</div>
+
+				<div class="row g-3">
+					<div class="col-md-6">
+						<label class="form-label">Start time</label>
+						{{ form.start_time }}
+						{% if form.start_time.errors %}
+							<div class="form-text text-danger">{{ form.start_time.errors }}</div>
+						{% endif %}
+					</div>
+					<div class="col-md-6">
+						<label class="form-label">End time</label>
+						{{ form.end_time }}
+						{% if form.end_time.errors %}
+							<div class="form-text text-danger">{{ form.end_time.errors }}</div>
+						{% endif %}
+					</div>
+				</div>
+
+				<div class="mt-4">
+					<button class="btn btn-primary">Create</button>
+					{% if election %}
+					  <input type="hidden" name="start_time_utc" value="{{ election.start_time|date:'c' }}">
+					  <input type="hidden" name="end_time_utc" value="{{ election.end_time|date:'c' }}">
+					{% endif %}
+					<a class="btn btn-link ms-2" href="{% url 'admin_dashboard' %}">Cancel</a>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+{% endblock %}

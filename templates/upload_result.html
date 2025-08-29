@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Imported {{ imported }} voters into {{ election.title }}</h2>
+<p><a href="{% url 'admin_dashboard' %}">Back to admin</a></p>
+{% endblock %}

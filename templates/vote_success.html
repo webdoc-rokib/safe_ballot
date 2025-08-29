@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card shadow-sm text-center py-5">
+	<div class="card-body">
+		<h3 class="mb-3"><i data-feather="check-circle" class="icon text-success"></i> Thanks — your vote for <strong>{{ election.title }}</strong> was recorded.</h3>
+		<a class="btn btn-primary mt-3" href="{% url 'voter_dashboard' %}">Back to dashboard</a>
+	</div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load utils %}
+{% block content %}
+<h2>Candidates for {{ election.title }}</h2>
+<p><a class="btn btn-primary" href="{% url 'create_candidate' election.id %}">Create Candidate</a></p>
+<table class="table">
+  <thead><tr><th>Name</th><th>Bio</th><th>Votes</th><th></th></tr></thead>
+  <tbody>
+    {% for c in candidates %}
+      <tr>
+        <td>{{ c.name }}</td>
+        <td>{{ c.bio|truncatechars:80 }}</td>
+  <td>{{ tally|get_item:c.id|default:0 }}</td>
+        <td>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'edit_candidate' election.id c.id %}">Edit</a>
+          <form method="post" action="{% url 'delete_candidate' election.id c.id %}" style="display:inline-block">{% csrf_token %}
+            <button class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

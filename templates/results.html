@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h3 class="card-title">Results: {{ election.title }}</h3>
+    <p class="text-muted small">Results were revealed after the election concluded.</p>
+    <div class="row align-items-center">
+    <div class="col-md-8">
+        <canvas id="resultsChart" width="600" height="300"></canvas>
+      </div>
+      <div class="col-md-4">
+      <h6 class="mt-2"><i data-feather="pie-chart" class="icon"></i> Tally</h6>
+        <ul class="list-group">
+          {% for k, v in tally.items %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">{{ k }}<span class="badge bg-primary rounded-pill">{{ v }}</span></li>
+          {% empty %}
+            <li class="list-group-item">No votes</li>
+          {% endfor %}
+        </ul>
+        <div class="mt-3"><a class="btn btn-outline-secondary" href="{% url 'export_results_csv' election.id %}">Export CSV</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const labels = JSON.parse('{{ chart_labels_json|escapejs }}');
+  const data = JSON.parse('{{ chart_values_json|escapejs }}');
+  const ctx = document.getElementById('resultsChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Votes',
+        data: data,
+        backgroundColor: labels.map((_,i)=>`hsl(${(i*70)%360} 70% 55% / 0.8)`),
+        borderColor: labels.map((_,i)=>`hsl(${(i*70)%360} 70% 45% / 1)`),
+        borderWidth: 1
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+</script>
+{% endblock %}
