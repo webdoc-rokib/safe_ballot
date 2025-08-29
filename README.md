@@ -1,35 +1,143 @@
-# SafeBallot
+## SafeBallot
 
-Secure and anonymous online voting platform prototype (Django).
+Secure and anonymous online voting platform — prototype built with Django. This repository contains a Phase‑1 implementation with an `elections` app, AES‑GCM vote encryption utilities, basic UI, a seeder, and unit tests.
 
-This workspace contains a Phase 1 scaffold: Django project, `elections` app, models, crypto utils, and tests.
+This README explains how to run the project locally, use the demo seeder, manage secrets, run tests, and prepare for production.
 
-See `requirements.txt` for dependencies and `.env.example` for required environment variables.
+## Quick links
 
-Important: Set `AES_KEY_HEX` in your `.env` to a 64-character hex string (32 bytes) used for AES-256 encryption.
-For local testing the test suite sets a temporary key automatically, but in production you must provide a secure key.
+- Project: Django (Python 3.11+)
+- App: `elections`
+- Crypto: AES‑GCM using an environment key `AES_KEY_HEX` (32 bytes in hex, 64 chars)
+- Docker: `docker-compose.yml` included for local demo
 
-Demo stack
-----------
+## Prerequisites
 
-To run a local demo with seeded data (admin, two voters, a demo election with two candidates, and two demo votes):
+- Python 3.11+ (if running without Docker)
+- Docker & Docker Compose (for containerized local demo)
+- Git (recommended)
 
-1. Start the stack with the seeder enabled:
+## Environment variables
+
+Copy the example and edit values for your environment:
+
+```powershell
+copy .env.example .env
+# then edit .env in your editor
+```
+
+Important variables:
+
+- `AES_KEY_HEX` — Required for encryption. Must be a 64-character hex string (32 bytes). Changing this value in production will prevent decryption of existing votes.
+- `DJANGO_SECRET_KEY` — Django secret key (do not use the dev default in production).
+- `DATABASE_PASSWORD` — Database password if using external DB.
+
+Never commit your `.env` to source control. `.gitignore` already contains `.env` and other local artifacts.
+
+## Run locally (no Docker)
+
+1. Create a venv and install dependencies:
+
+    ```powershell
+    python -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+    pip install -r requirements.txt
+    ```
+
+2. Populate `.env` (see above). Then run migrations and start the dev server:
+
+    ```powershell
+    python manage.py migrate
+    python manage.py runserver
+    ```
+
+3. Optionally seed demo data (creates an admin and sample voters):
+
+    ```powershell
+    python manage.py seed_demo
+    ```
+
+The site will be available at http://127.0.0.1:8000/.
+
+## Run with Docker (recommended for quick demos)
+
+The repository includes a `docker-compose.yml` that starts a web service and a Postgres database for local development.
+
+To run the demo (PowerShell):
 
 ```powershell
 docker compose up --build -d
-docker compose exec web bash -lc "export SEED_DEMO=true; /app/scripts/entrypoint.sh gunicorn safeballot.wsgi:application --bind 0.0.0.0:8000"
 ```
 
-Or set `SEED_DEMO=true` in `docker-compose.yml` under the `web.environment` section before starting the stack.
+If you want the demo seeder to run inside the container, set the `SEED_DEMO` environment variable in your `.env` or in `docker-compose.yml` under the `web.environment` section. Example (in `.env`):
 
-2. The demo admin user is `admin` / `AdminPass123`. Two voters were created: `voter1`/`VoterPass1` and `voter2`/`VoterPass2`.
+```text
+SEED_DEMO=true
+```
 
-3. The demo election is available on the site index. Results are seeded and the tally can be viewed after the election end time.
+To view logs or run a shell in the web container:
 
-Docker / secrets note
----------------------
+```powershell
+docker compose logs -f web
+docker compose exec web bash
+```
 
-Do not commit your `.env` file. For local development, copy `.env.example` to `.env` and edit values. The project includes a `.dockerignore` to avoid copying `.env` and local virtualenv into the image.
+Notes:
 
-In production, inject secrets via your host platform or CI (GitHub Actions secrets, AWS Secrets Manager, etc.) rather than baking them into images or `docker-compose.yml`.
+- The compose file currently includes development/demo credentials (`safeballot_pass`) for convenience. Do not use these values in production. Replace them with secure values stored outside the repository (or provide them via `.env`, which must remain gitignored).
+- The `Dockerfile` is a multi-stage build and runs the app as a non-root user to improve image hygiene.
+
+## Demo credentials (local/test only)
+
+- Admin: `admin` / `AdminPass123`
+- Voters: `voter1`/`VoterPass1`, `voter2`/`VoterPass2`
+
+These are seeded only if you enable the seeder. Do not use them in production.
+
+## AES key and data stability
+
+The application encrypts votes using AES‑GCM with the key supplied by `AES_KEY_HEX`. This key is critical:
+
+- It must be 64 hex characters (32 bytes).
+- If you change the key in production, previously encrypted votes will no longer be decryptable. Treat this as a non-rotatable key for stored ballots unless you implement key wrapping or re-encryption.
+
+## CI / GitHub Actions
+
+CI is configured to require `AES_KEY_HEX` as a repository secret. Before enabling CI on your repository, add the secret in GitHub: Settings → Secrets → Actions → New repository secret, name it `AES_KEY_HEX` and paste the 64-character hex key.
+
+The workflow intentionally fails if `AES_KEY_HEX` is absent to avoid running tests with a demo key.
+
+## Tests
+
+Run the Django test suite locally:
+
+```powershell
+python manage.py test
+```
+
+Unit tests set a demo AES key at runtime so they can run in CI and local dev. This demo key is for tests only and must not be used for production data.
+
+## Production recommendations (summary)
+
+- Use a managed secrets store (GitHub Secrets, AWS Secrets Manager, HashiCorp Vault) to provide `AES_KEY_HEX`, `DJANGO_SECRET_KEY`, and DB credentials.
+- Use PostgreSQL or another production-grade RDBMS (the compose file can be adapted to use a hosted DB).
+- Serve static files from a CDN or object storage (S3/MinIO) and protect media uploads.
+- Put the application behind an HTTPS reverse proxy (Nginx, Traefik) and terminate TLS there.
+- Add monitoring, structured logging, and backup/restore for the encrypted ballots. Plan key management carefully.
+
+## Troubleshooting
+
+- If you see AES key errors, ensure `AES_KEY_HEX` is set and valid (64 hex characters). The app will raise a RuntimeError if the key is missing or invalid.
+- If migrations fail, ensure your DB credentials in `.env` match the running database.
+
+## Contributing
+
+Contributions are welcome. For small fixes, send a PR. For major changes (key management, production deployment), open an issue first to discuss design and security implications.
+
+## License
+
+This project is a prototype. Add a license file if you intend to publish under a specific license.
+
+## Contact
+
+If you want help with deployment hardening, secret rotation, or an audit of the repository history for leaked secrets, say the word and I can run the checks or apply the proposed changes.
