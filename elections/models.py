@@ -6,6 +6,9 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='voter')
     phone = models.CharField(max_length=20, blank=True)
+    # email confirmation and admin approval for voter accounts
+    is_confirmed = models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.user.username} ({self.role})'

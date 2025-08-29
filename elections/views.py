@@ -20,6 +20,9 @@ from io import TextIOWrapper
 from django.http import HttpResponse
 import io
 import json
+from django.core import signing
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 def index(request):
@@ -52,13 +55,73 @@ def register(request):
             user.first_name = data.get('first_name', '')
             user.last_name = data.get('last_name', '')
             user.save()
-            # create profile
-            Profile.objects.create(user=user, phone=data.get('phone', ''), role='voter')
-            login(request, user)
-            return redirect('voter_dashboard')
+            # create profile (unconfirmed and unapproved)
+            Profile.objects.create(user=user, phone=data.get('phone', ''), role='voter', is_confirmed=False, is_approved=False)
+
+            # generate confirmation token and send email (if email provided)
+            email = data.get('email')
+            if email:
+                token = signing.dumps({'user_id': user.id}, salt='email-confirm')
+                confirm_url = request.build_absolute_uri(f"/confirm-email/?token={token}")
+                # Use Django email backend; in dev this may print to console or be a no-op
+                try:
+                    send_mail(
+                        subject='Confirm your SafeBallot account',
+                        message=f'Please confirm your account by visiting: {confirm_url}',
+                        from_email=settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@example.com',
+                        recipient_list=[email],
+                    )
+                    messages.info(request, 'A confirmation email has been sent. Check your inbox to confirm your account.')
+                except Exception:
+                    # fallback: log the URL to the console/messages so an operator can copy it
+                    messages.info(request, f'Confirmation URL (dev): {confirm_url}')
+
+            # after registration, show a notice that account requires confirmation and admin approval
+            return render(request, 'registration_pending.html', {'email': email})
     else:
         form = RegistrationForm()
     return render(request, 'register.html', {'form': form})
+
+
+def confirm_email(request):
+    token = request.GET.get('token')
+    if not token:
+        return HttpResponse('Missing token', status=400)
+    try:
+        data = signing.loads(token, salt='email-confirm', max_age=60*60*24)
+        uid = data.get('user_id')
+        user = User.objects.get(id=uid)
+        profile = user.profile
+        profile.is_confirmed = True
+        profile.save()
+        messages.success(request, 'Email confirmed. An admin will approve your account shortly.')
+        return redirect('index')
+    except signing.SignatureExpired:
+        return HttpResponse('Confirmation link has expired', status=400)
+    except Exception:
+        return HttpResponse('Invalid token', status=400)
+
+
+@login_required
+def admin_pending_users(request):
+    if not _is_admin(request.user):
+        return HttpResponseForbidden('Admins only')
+    # show unapproved users
+    pending = Profile.objects.filter(role='voter', is_approved=False).select_related('user')
+    return render(request, 'admin_pending_users.html', {'pending': pending})
+
+
+@login_required
+def admin_approve_user(request, profile_id):
+    if not _is_admin(request.user):
+        return HttpResponseForbidden('Admins only')
+    profile = get_object_or_404(Profile, pk=profile_id)
+    if request.method == 'POST':
+        profile.is_approved = True
+        profile.save()
+        messages.success(request, f'User {profile.user.username} approved')
+        return redirect('admin_pending_users')
+    return render(request, 'confirm_delete.html', {'object': profile.user, 'type': 'approve'})
 
 
 def user_login(request):

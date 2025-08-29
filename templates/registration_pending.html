@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h3>Registration submitted</h3>
+  <p>Thank you for registering. {% if email %}A confirmation message was sent to <strong>{{ email }}</strong>. {% endif %}An administrator will review and approve your account shortly. You will be notified when your account is active.</p>
+  <a class="btn btn-primary" href="{% url 'index' %}">Return to home</a>
+</div>
+{% endblock %}

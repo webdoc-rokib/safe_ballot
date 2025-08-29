@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h3>Pending user approvals</h3>
+  {% if pending %}
+    <table class="table table-striped mt-3">
+      <thead><tr><th>Username</th><th>Email</th><th>Confirmed</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for p in pending %}
+          <tr>
+            <td>{{ p.user.username }}</td>
+            <td>{{ p.user.email }}</td>
+            <td>{% if p.is_confirmed %}Yes{% else %}No{% endif %}</td>
+            <td>
+              <form method="post" action="{% url 'admin_approve_user' p.id %}">{% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-success">Approve</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="alert alert-info">No pending approvals.</div>
+  {% endif %}
+</div>
+{% endblock %}

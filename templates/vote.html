@@ -5,13 +5,13 @@
     <h3 class="card-title">Vote: {{ election.title }}</h3>
     <p class="text-muted">Choose one candidate below. Your selection will be encrypted and stored anonymously.</p>
     <form method="post">{% csrf_token %}
-      <div class="row g-3">
+      <div class="row g-3" role="radiogroup" aria-labelledby="vote-title">
         {% for c in candidates %}
           <div class="col-md-6">
-            <label class="card p-3 h-100 candidate-option d-flex align-items-start gap-3">
-              <input type="radio" name="candidate_id" value="{{ c.id }}" class="form-check-input me-2" required>
+            <label class="card p-3 h-100 candidate-option d-flex align-items-start gap-3" tabindex="0">
+              <input type="radio" name="candidate_id" id="cand-{{ c.id }}" value="{{ c.id }}" class="form-check-input me-2" aria-label="Select {{ c.name }}" required>
               <div>
-                <strong>{{ c.name }}</strong>
+                <strong id="cand-label-{{ c.id }}">{{ c.name }}</strong>
                 <div class="text-muted small">{{ c.bio|default:'No bio' }}</div>
               </div>
             </label>
@@ -19,8 +19,8 @@
         {% endfor %}
       </div>
       <div class="mt-4">
-        <button class="btn btn-primary">Cast vote</button>
-        <a class="btn btn-link" href="{% url 'voter_dashboard' %}">Cancel</a>
+        <button type="submit" class="btn btn-primary">Cast vote</button>
+        <a class="btn btn-link" role="button" href="{% url 'voter_dashboard' %}">Cancel</a>
       </div>
     </form>
   </div>
