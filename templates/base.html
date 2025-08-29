@@ -27,17 +27,26 @@
       <div class="collapse navbar-collapse" id="navCollapse">
         <ul class="navbar-nav ms-auto align-items-lg-center">
           <li class="nav-item"><a class="nav-link" href="{% url 'index' %}">Home</a></li>
-          <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'about' %}">About</a></li>
           {% if user.is_authenticated %}
-            <li class="nav-item"><a class="nav-link" href="{% url 'voter_dashboard' %}">Dashboard</a></li>
             {% if is_admin %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'admin_dashboard' %}">Admin</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+            {% else %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'voter_dashboard' %}">Dashboard</a></li>
             {% endif %}
             <li class="nav-item">
               <form method="post" action="{% url 'logout' %}" class="d-inline">
                 {% csrf_token %}
                 <button class="btn btn-outline-light btn-sm ms-2">Sign out</button>
               </form>
+            </li>
+            <li class="nav-item ms-2">
+              <button id="themeToggle" type="button" class="btn btn-outline-light btn-sm" aria-pressed="false" aria-label="Toggle dark mode" title="Toggle dark mode">
+                <!-- moon icon (will toggle to sun when dark mode active) -->
+                <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-moon" viewBox="0 0 16 16">
+                  <path d="M6 .278a.5.5 0 0 1 .57.38A7 7 0 1 0 13.342 9.15.5.5 0 0 1 13.72 9.72 8 8 0 1 1 6 .278z"/>
+                </svg>
+              </button>
             </li>
           {% else %}
             <li class="nav-item"><a class="btn btn-light btn-sm ms-2" href="{% url 'login' %}">Sign in</a></li>

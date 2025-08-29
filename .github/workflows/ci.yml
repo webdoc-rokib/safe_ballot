@@ -31,6 +31,9 @@ jobs:
           pip install -r requirements.txt
       - name: Run tests
         env:
-          AES_KEY_HEX: 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff
+          # AES_KEY_HEX should be set as a GitHub Repository Secret (Settings -> Secrets).
+          # The workflow will fail if the secret is not provided to avoid using demo keys.
+          AES_KEY_HEX: ${{ secrets.AES_KEY_HEX }}
         run: |
+          if [ -z "$AES_KEY_HEX" ]; then echo "AES_KEY_HEX not set in secrets"; exit 1; fi
           python manage.py test --verbosity=2

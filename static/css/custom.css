@@ -9,11 +9,59 @@
   --accent: #7c3aed;
 }
 
+/* Dark mode variables applied when .theme-dark is present on <html> */
+.theme-dark {
+  --brand: #2b8cff;
+  --muted: #9aa4b2;
+  --bg1: linear-gradient(180deg, #071126 0%, #020617 100%);
+  --card-bg: rgba(255,255,255,0.03);
+  --accent: #9f7aea;
+  background-color: #05060a;
+  color: #e6eef8;
+}
+
 body.bg-gradient{
   background: linear-gradient(180deg, rgba(13,110,253,0.06), rgba(124,58,237,0.02));
   color: #0f172a;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
+
+/* adjust some elements in dark theme */
+.theme-dark body.bg-gradient {
+  background: linear-gradient(180deg, rgba(11,22,36,0.4), rgba(2,6,11,0.6));
+}
+
+.theme-dark .card { background: rgba(255,255,255,0.02); }
+.theme-dark .navbar { background-color: #0b2a4a !important; }
+.theme-dark .footer { background-color: #06070a; border-top-color: rgba(255,255,255,0.03); }
+.theme-dark .alert { background-color: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.03); color: var(--muted); }
+.theme-dark .btn-primary { background: var(--brand); border-color: var(--brand); }
+
+/* Make body and text readable in dark mode */
+.theme-dark body.bg-gradient { color: #e6eef8; }
+.theme-dark body, .theme-dark p, .theme-dark li, .theme-dark h1, .theme-dark h2, .theme-dark h3, .theme-dark h4, .theme-dark h5, .theme-dark h6 {
+  color: #e6eef8;
+}
+.theme-dark .text-muted, .theme-dark .small { color: rgba(230,238,248,0.7) !important; }
+.theme-dark .navbar .nav-link { color: rgba(230,238,248,0.95) !important; }
+.theme-dark .navbar-brand { color: #f4fbff !important; }
+.theme-dark .btn-outline-light { border-color: rgba(255,255,255,0.12); color: #e6eef8; }
+.theme-dark .btn-outline-light:hover { background: rgba(255,255,255,0.03); }
+.theme-dark .btn, .theme-dark .btn-primary { color: #fff; }
+.theme-dark .card { color: #e6eef8; }
+.theme-dark input.form-control, .theme-dark textarea.form-control, .theme-dark select.form-control {
+  background: rgba(255,255,255,0.02);
+  border-color: rgba(255,255,255,0.06);
+  color: #e6eef8;
+}
+.theme-dark .footer a { color: rgba(230,238,248,0.9); }
+
+/* Ensure badges and pills are visible */
+.theme-dark .badge { background: rgba(255,255,255,0.06); color: #e6eef8; }
+
+/* Contributors panel */
+.contributors .card { border: none; background: rgba(255,255,255,0.02); }
+.contrib-img { width: 100%; height: 140px; object-fit: cover; border-radius: .45rem; }
 
 /* make layout fill viewport and keep footer at bottom */
 html, body {

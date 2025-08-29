@@ -3,20 +3,40 @@
 <div class="card shadow-sm">
   <div class="card-body">
     <h3 class="card-title">Results: {{ election.title }}</h3>
-    <p class="text-muted small">Results were revealed after the election concluded.</p>
+    <p class="text-muted small">Results were revealed after the election concluded or were published by an admin.</p>
     <div class="row align-items-center">
     <div class="col-md-8">
         <canvas id="resultsChart" width="600" height="300"></canvas>
       </div>
       <div class="col-md-4">
-      <h6 class="mt-2"><i data-feather="pie-chart" class="icon"></i> Tally</h6>
+        <h6 class="mt-2"><i data-feather="pie-chart" class="icon"></i> Results Summary</h6>
+        <p class="small text-muted">Total eligible voters: <strong>{{ total_voters }}</strong></p>
+        <p class="small text-muted">Total votes cast: <strong>{{ total_votes }}</strong></p>
+        <p class="small text-muted">Casting percentage: <strong>{{ casting_percentage }}%</strong></p>
+
+        <h4>By candidate</h4>
         <ul class="list-group">
-          {% for k, v in tally.items %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">{{ k }}<span class="badge bg-primary rounded-pill">{{ v }}</span></li>
+          {% for r in results_list %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <div><strong>{{ r.choice }}</strong></div>
+                <div class="small text-muted">{{ r.percentage }}% of votes</div>
+              </div>
+              <span class="badge bg-primary rounded-pill">{{ r.count }}</span>
+            </li>
           {% empty %}
             <li class="list-group-item">No votes</li>
           {% endfor %}
         </ul>
+
+        {% if winners %}
+          <p class="mb-2"><strong>Winner{% if winners|length > 1 %}s (tie){% endif %}:</strong> {{ winners_display|join:", " }}</p>
+          {% if margin_votes > 0 %}
+            <p>Winning margin: {{ margin_votes }} votes ({{ margin_percentage }}% of cast votes)</p>
+          {% endif %}
+        {% else %}
+          <p>No votes yet.</p>
+        {% endif %}
         <div class="mt-3"><a class="btn btn-outline-secondary" href="{% url 'export_results_csv' election.id %}">Export CSV</a></div>
       </div>
     </div>

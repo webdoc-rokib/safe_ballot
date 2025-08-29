@@ -89,3 +89,9 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication URLs
+# The project defines login at '/login/' (see safeballot.urls). Django's default
+# LOGIN_URL is '/accounts/login/' which caused redirects to a non-existent path.
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'

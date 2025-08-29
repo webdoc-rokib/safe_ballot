@@ -4,6 +4,9 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth import logout
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from .forms import RegistrationForm
+from django.contrib.auth.models import User
+from .models import Profile
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .models import Election, Candidate, Vote, VoterStatus
@@ -26,6 +29,11 @@ def index(request):
     return render(request, 'index.html', {'elections': elections})
 
 
+def about(request):
+    """Static about page describing the project and contact info."""
+    return render(request, 'about.html')
+
+
 def user_logout(request):
     # only allow POST logout to avoid CSRF-sensitive GETs
     if request.method != 'POST':
@@ -37,13 +45,19 @@ def user_logout(request):
 
 def register(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = RegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            data = form.cleaned_data
+            user = User.objects.create_user(username=data['username'], password=data['password1'], email=data.get('email') or '')
+            user.first_name = data.get('first_name', '')
+            user.last_name = data.get('last_name', '')
+            user.save()
+            # create profile
+            Profile.objects.create(user=user, phone=data.get('phone', ''), role='voter')
             login(request, user)
             return redirect('voter_dashboard')
     else:
-        form = UserCreationForm()
+        form = RegistrationForm()
     return render(request, 'register.html', {'form': form})
 
 
@@ -103,22 +117,103 @@ def vote_view(request, election_id):
 
 def results_view(request, election_id):
     election = get_object_or_404(Election, pk=election_id)
-    if timezone.now() < election.end_time:
-        return HttpResponseForbidden('Results are not available until election has concluded')
+    # Allow results to be viewed when election has concluded OR has been published
+    if not (timezone.now() >= election.end_time or election.status == 'concluded'):
+        return HttpResponseForbidden('Results are not available until election has concluded or published by an admin')
+
     votes = election.votes.all()
     decrypted = [decrypt_vote(v.encrypted_vote_data, associated_data=str(election.id)) for v in votes]
     # simple aggregation
     tally = {}
+    total_votes = 0
     for d in decrypted:
         tally[d] = tally.get(d, 0) + 1
+        total_votes += 1
+
+    # compute per-candidate percentages and determine winner(s)
+    percentages = {}
+    for choice, count in tally.items():
+        pct = (count / total_votes * 100) if total_votes > 0 else 0
+        percentages[choice] = round(pct, 2)
+
+    if tally:
+        max_votes = max(tally.values())
+        winners = [c for c, v in tally.items() if v == max_votes]
+    else:
+        winners = []
+
+    # Build a results list for template consumption and map candidate tokens to names
+    results_list = []
+    for choice, count in tally.items():
+        display = choice
+        # if vote stored as 'candidate:<id>' map to candidate name when possible
+        if isinstance(choice, str) and choice.startswith('candidate:'):
+            try:
+                cid = int(choice.split(':', 1)[1])
+                cand = Candidate.objects.filter(id=cid, election=election).first()
+                if cand:
+                    display = cand.name
+            except Exception:
+                pass
+        results_list.append({
+            'choice': display,
+            'raw_choice': choice,
+            'count': count,
+            'percentage': percentages.get(choice, 0),
+        })
+
     # prepare chart data JSON
     labels = list(tally.keys())
     values = [tally[k] for k in labels]
     chart_labels_json = json.dumps(labels)
     chart_values_json = json.dumps(values)
+    # total eligible voters for this election
+    from .models import VoterStatus
+    total_voters = VoterStatus.objects.filter(election=election).count()
+    casting_percentage = round((total_votes / total_voters * 100), 2) if total_voters > 0 else 0
+
+    # compute winning margin (difference between top and second place)
+    margin_votes = 0
+    margin_percentage = 0
+    if winners and total_votes > 0 and len(tally) > 0:
+        if len(winners) == 1:
+            # find runner-up
+            sorted_counts = sorted(tally.values(), reverse=True)
+            top = sorted_counts[0]
+            second = sorted_counts[1] if len(sorted_counts) > 1 else 0
+            margin_votes = top - second
+            margin_percentage = round((margin_votes / total_votes * 100), 2) if total_votes > 0 else 0
+        else:
+            # tie -> zero margin
+            margin_votes = 0
+            margin_percentage = 0
+
+    # prepare human-friendly winner names for the template
+    winners_display = []
+    for w in winners:
+        wd = w
+        if isinstance(w, str) and w.startswith('candidate:'):
+            try:
+                cid = int(w.split(':', 1)[1])
+                cand = Candidate.objects.filter(id=cid, election=election).first()
+                if cand:
+                    wd = cand.name
+            except Exception:
+                pass
+        winners_display.append(wd)
+
     return render(request, 'results.html', {
         'election': election,
         'tally': tally,
+        'results_list': results_list,
+        'percentages': percentages,
+        'total_votes': total_votes,
+        'winners': winners,
+        'winners_display': winners_display,
+        'total_voters': total_voters,
+        'casting_percentage': casting_percentage,
+        'margin_votes': margin_votes,
+        'margin_percentage': margin_percentage,
         'chart_labels_json': chart_labels_json,
         'chart_values_json': chart_values_json,
     })
@@ -255,6 +350,23 @@ def delete_election(request, election_id):
         election.delete()
         return redirect('admin_dashboard')
     return render(request, 'confirm_delete.html', {'object': election, 'type': 'election'})
+
+
+@login_required
+def publish_results(request, election_id):
+    """Mark an election as concluded (publish results).
+    This is a simple admin action -- it sets status='concluded'.
+    Only accessible to admins (staff, superuser, or profile.role == 'admin').
+    """
+    if not _is_admin(request.user):
+        return HttpResponseForbidden('Admins only')
+    election = get_object_or_404(Election, pk=election_id)
+    if request.method == 'POST':
+        election.status = 'concluded'
+        election.save()
+        return redirect('admin_dashboard')
+    # For safety, show a confirmation page
+    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish'})
 
 
 @login_required

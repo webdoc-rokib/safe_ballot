@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}About — SafeBallot{% endblock %}
+{% block content %}
+
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="p-4 rounded shadow-sm" style="background: linear-gradient(90deg, rgba(11,37,84,0.06), rgba(124,58,237,0.03));">
+      <h1 class="mb-2">SafeBallot</h1>
+      <p class="lead mb-0">Secure, private, and easy-to-use online voting built for clubs, societies, and small organizations.</p>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <section class="mb-4">
+      <h2>Why choose SafeBallot?</h2>
+      <p>We focus on three core promises: privacy, simplicity, and trust. SafeBallot encrypts individual votes, minimizing exposure of voter intent while producing auditable tallies for transparency.</p>
+      <div class="row">
+        <div class="col-md-6">
+          <h5>Privacy-first</h5>
+          <p class="small text-muted">AES‑GCM encryption ensures ballots are stored as ciphertext until tallying.</p>
+        </div>
+        <div class="col-md-6">
+          <h5>Simple admin tools</h5>
+          <p class="small text-muted">Upload eligible voters, manage candidates, and publish results with a few clicks.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-4">
+      <h3>Problems we solve</h3>
+      <ul>
+        <li>Reduce manual ballot counting and the errors that come with it.</li>
+        <li>Protect voter anonymity while allowing verifiable outcomes.</li>
+        <li>Provide a reproducible process for small-scale elections without heavy infrastructure.</li>
+      </ul>
+    </section>
+
+    <section class="mb-4">
+      <h3>Who should use SafeBallot?</h3>
+      <p>Student unions, clubs, non-profit boards, local communities, and any organization seeking an accessible, private voting solution without enterprise complexity.</p>
+    </section>
+
+    <section class="mb-4">
+      <h3>FAQ</h3>
+      <div class="accordion" id="faq">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faq1">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c1">Can votes be traced back to voters?</button>
+          </h2>
+          <div id="c1" class="accordion-collapse collapse" data-bs-parent="#faq">
+            <div class="accordion-body">Votes are stored encrypted. The system does not attach voter identifiers to individual ciphertexts; eligibility is enforced separately via `VoterStatus`.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faq2">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c2">What happens if the encryption key is lost?</button>
+          </h2>
+          <div id="c2" class="accordion-collapse collapse" data-bs-parent="#faq">
+            <div class="accordion-body">If the AES key is lost or rotated without migration, previously cast votes cannot be decrypted. Key management is critical in production.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="faq3">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c3">Is this suitable for large-scale governmental elections?</button>
+          </h2>
+          <div id="c3" class="accordion-collapse collapse" data-bs-parent="#faq">
+            <div class="accordion-body">SafeBallot is designed for small to medium organizations. Governmental-scale elections require specialized legal, security, and operational controls beyond this demo.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <aside class="col-lg-4">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Project at a glance</h5>
+        <p class="mb-1"><strong>Tech:</strong> Django, Bootstrap, AES‑GCM</p>
+        <p class="mb-1"><strong>License:</strong> MIT (example)</p>
+        <p class="mb-1"><strong>Repo:</strong> <a href="#">GitHub</a></p>
+        <hr>
+        <h6>Contact</h6>
+        <p class="small mb-0">For security reports: <a href="mailto:security@safeballot.example">security@safeballot.example</a></p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Support & Services</h5>
+        <p class="small text-muted">We offer consulting and secure deployments for educational institutions. Contact us for pricing and SLA options.</p>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<hr class="my-4">
+
+<section>
+  <h2 class="mb-3">Contributors</h2>
+  <p class="small text-muted">People who contributed to this project.</p>
+  <div class="contributors row g-3">
+    <div class="col-sm-6 col-md-3">
+      <div class="card text-center p-3">
+        <img src="https://via.placeholder.com/140?text=Dev+1" alt="Dev 1" class="contrib-img mb-2">
+        <h6 class="mb-0">Alex Developer</h6>
+        <p class="small text-muted mb-1">Lead developer</p>
+        <p><a href="#" class="small">GitHub</a></p>
+      </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <div class="card text-center p-3">
+        <img src="https://via.placeholder.com/140?text=Dev+2" alt="Dev 2" class="contrib-img mb-2">
+        <h6 class="mb-0">Rokib</h6>
+        <p class="small text-muted mb-1">Backend</p>
+        <p><a href="#" class="small">GitHub</a></p>
+      </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <div class="card text-center p-3">
+        <img src="https://via.placeholder.com/140?text=Dev+3" alt="Dev 3" class="contrib-img mb-2">
+        <h6 class="mb-0">Taylor Tester</h6>
+        <p class="small text-muted mb-1">QA</p>
+        <p><a href="#" class="small">GitHub</a></p>
+      </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <div class="card text-center p-3">
+        <img src="https://via.placeholder.com/140?text=Dev+4" alt="Dev 4" class="contrib-img mb-2">
+        <h6 class="mb-0">Sam Designer</h6>
+        <p class="small text-muted mb-1">UX/Design</p>
+        <p><a href="#" class="small">GitHub</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -2,12 +2,21 @@
 {% block content %}
 <div class="card">
   <div class="card-body">
-    <h4>Confirm delete</h4>
-    <p>Are you sure you want to delete this {{ type }}: <strong>{{ object }}</strong>?</p>
-    <form method="post">{% csrf_token %}
-      <button class="btn btn-danger">Yes, delete</button>
-      <a class="btn btn-link" href="javascript:history.back()">Cancel</a>
-    </form>
+    {% if type == 'publish' %}
+      <h4>Publish results</h4>
+      <p>Are you sure you want to publish results for: <strong>{{ object }}</strong>?</p>
+      <form method="post">{% csrf_token %}
+        <button class="btn btn-warning">Yes, publish results</button>
+        <a class="btn btn-link" href="javascript:history.back()">Cancel</a>
+      </form>
+    {% else %}
+      <h4>Confirm delete</h4>
+      <p>Are you sure you want to delete this {{ type }}: <strong>{{ object }}</strong>?</p>
+      <form method="post">{% csrf_token %}
+        <button class="btn btn-danger">Yes, delete</button>
+        <a class="btn btn-link" href="javascript:history.back()">Cancel</a>
+      </form>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

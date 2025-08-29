@@ -15,6 +15,9 @@
               <span class="badge bg-success me-2">Voted</span>
             {% endif %}
             <a href="{% url 'results' s.election.id %}" class="btn btn-link"><i data-feather="bar-chart-2" class="icon"></i>Results</a>
+            {% if s.election.status == 'concluded' %}
+              <div class="small text-muted mt-2">Results published — <a href="{% url 'results' s.election.id %}">view</a></div>
+            {% endif %}
           </div>
         </div>
       </div>

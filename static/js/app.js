@@ -22,6 +22,42 @@ document.addEventListener('DOMContentLoaded', function () {
     try { window.feather.replace(); } catch (e) { /* ignore */ }
   }
 
+  // theme toggle (light / dark) — persisted in localStorage
+  const THEME_KEY = 'safeballot_theme';
+  function applyTheme(theme) {
+    const html = document && document.documentElement;
+    if (!html) return;
+    if (theme === 'dark') html.classList.add('theme-dark'); else html.classList.remove('theme-dark');
+    // update toggle button aria-pressed and icon if present
+    const tbtn = document.getElementById('themeToggle');
+    const icon = document.getElementById('themeIcon');
+    if (tbtn) tbtn.setAttribute('aria-pressed', theme === 'dark');
+    if (icon) {
+      // swap to sun icon when dark, moon when light (full icons)
+      if (theme === 'dark') {
+        icon.innerHTML = '<path d="M6.995 12.903a5 5 0 1 1 4.102-8.01 6 6 0 1 0-4.102 8.01z"/>';
+        icon.setAttribute('class', 'bi bi-sun-fill');
+      } else {
+        icon.innerHTML = '<path d="M14.53 10.53a6.5 6.5 0 1 1-8.06-8.06 7 7 0 1 0 8.06 8.06z"/>';
+        icon.setAttribute('class', 'bi bi-moon-fill');
+      }
+    }
+  }
+  // read persisted
+  let theme = localStorage.getItem(THEME_KEY) || 'light';
+  applyTheme(theme);
+  // attach handler for toggle
+  const toggle = document.getElementById('themeToggle');
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      theme = (theme === 'dark') ? 'light' : 'dark';
+      localStorage.setItem(THEME_KEY, theme);
+      applyTheme(theme);
+    });
+  // initialize icon state explicitly
+  applyTheme(theme);
+  }
+
   // Convert datetime-local inputs to UTC before submitting forms marked with .js-datetime-utc
   document.querySelectorAll('form.js-datetime-utc').forEach(form => {
     form.addEventListener('submit', (ev) => {
