@@ -134,9 +134,45 @@ Unit tests set a demo AES key at runtime so they can run in CI and local dev. Th
 
 Contributions are welcome. For small fixes, send a PR. For major changes (key management, production deployment), open an issue first to discuss design and security implications.
 
-## License
+## Licenses
 
-This project is a prototype. Add a license file if you intend to publish under a specific license.
+Project license status
+
+- This repository currently does not contain a formal `LICENSE` file. If you plan to publish or distribute the code, choose and add a license that matches how you want others to use the project (for example: MIT, Apache-2.0, or GPL-3.0).
+- A quick, common choice for permissive reuse is the MIT license (SPDX: `MIT`). If you'd prefer strong copyleft, consider `GPL-3.0-or-later`.
+
+How to add a license file
+
+- Create a `LICENSE` file in the repository root with the full text of the chosen license and commit it. On GitHub you can also use the web UI (Add file → Create new file → choose a license template).
+- Example (PowerShell):
+
+```powershell
+# create a LICENSE file and open it in your editor
+notepad LICENSE
+# or use GitHub web UI: https://github.com/<your-org>/<your-repo>/new/main?filename=LICENSE
+```
+
+Third-party components and their typical licenses
+
+Before publishing, verify the licenses of any third‑party components your project depends on (check `requirements.txt` and the frontend libs in `static/`):
+
+- Django — BSD (3‑clause)
+- Bootstrap — MIT
+- Chart.js — MIT
+- Feather icons — MIT
+
+Note: the exact license for each dependency should be verified from that project's repo or distribution package. If you want a quick inventory of installed Python package licenses in your environment you can use `pip-licenses` (install with `pip install pip-licenses`) and run:
+
+```powershell
+pip-licenses --format=columns
+```
+
+Recommendations
+
+- Add a `LICENSE` file with your chosen license text and commit it so the project is unambiguous to downstream users.
+- If you depend on commercial or differently-licensed components, document those exceptions in this section.
+
+If you'd like, I can add a specific license file (for example MIT) and commit it for you — tell me which license to use and I'll create and push the `LICENSE` file.
 
 ## Contact
 
