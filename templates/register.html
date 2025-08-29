@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
 {% load utils %}
+{% block page_icon %}
+	<svg class="icon-sm" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-7 18c0-3.31 2.69-6 6-6s6 2.69 6 6H5z" fill="currentColor"/></svg>
+{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
 	<div class="col-sm-10 col-md-6 col-lg-5">
@@ -26,6 +29,14 @@
 							{% endif %}
 						</div>
 					{% endfor %}
+
+					<div class="mb-3 form-check">
+						{{ form.agree_policies }}
+						<label class="form-check-label">I agree to the <a href="{% url 'privacy' %}">Privacy Policy</a>, <a href="{% url 'terms' %}">Terms of Use</a>, and <a href="{% url 'data_policy' %}">Data Policy</a>.</label>
+						{% if form.agree_policies.errors %}
+							<div class="form-text text-danger">{{ form.agree_policies.errors|striptags }}</div>
+						{% endif %}
+					</div>
 
 					<div class="d-grid">
 						<button type="submit" class="btn btn-success btn-lg">Register</button>

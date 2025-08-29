@@ -85,3 +85,91 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
+
+// Hide page loader once all resources are loaded
+window.addEventListener('load', function () {
+  try {
+    const loader = document.getElementById('page-loader');
+    if (!loader) return;
+    // If a vote animation exists, allow it to run and keep loader visible for its duration
+    const anim = loader.querySelector('.vote-anim');
+    if (anim) {
+      if (!anim.classList.contains('play')) anim.classList.add('play');
+      // keep loader visible for full animation length (3s) then hide
+      setTimeout(() => {
+        loader.classList.add('hidden');
+        setTimeout(() => loader.remove(), 480);
+      }, 3000);
+      return;
+    }
+    // fade out
+    loader.classList.add('hidden');
+    // remove from DOM after transition for accessibility
+    setTimeout(() => loader.remove(), 400);
+  } catch (e) { /* ignore */ }
+});
+
+// Safety fallback: if window.load never fires (hung resource), ensure loader is removed.
+(function () {
+  const LOADER_ID = 'page-loader';
+  const MAX_WAIT = 8000; // ms, maximum time to keep loader
+  let removed = false;
+
+  function hideLoader(force) {
+    if (removed) return;
+    const loader = document.getElementById(LOADER_ID);
+    if (!loader) { removed = true; return; }
+    // if there's a vote animation and we're not forcing removal, wait for the animation to finish
+    const anim = loader.querySelector('.vote-anim');
+    if (anim && !force) return;
+    // trigger a quick fade
+    loader.classList.add('hidden');
+    // remove after transition
+    setTimeout(() => {
+      if (loader && loader.parentNode) loader.remove();
+      removed = true;
+    }, 450);
+  }
+
+  // If DOM is ready but load hasn't fired within a short window, hide loader to avoid infinite spinner
+  document.addEventListener('DOMContentLoaded', function () {
+    // small delay to let critical render complete
+    setTimeout(hideLoader, 250);
+  });
+
+  // absolute max timeout (force removal even if animation present)
+  setTimeout(() => hideLoader(true), MAX_WAIT);
+})();
+
+// Vote casting animation: when loader present, play a short sequence
+(function () {
+  const loader = document.getElementById('page-loader');
+  if (!loader) return;
+  const anim = loader.querySelector('.vote-anim');
+  if (!anim) return;
+
+  function playVoteAnimation() {
+    // add class to play CSS animations
+    anim.classList.add('play');
+    // stagger confetti shards by adding inline durations/transforms
+    const shards = anim.querySelectorAll('.shard');
+    shards.forEach((s, i) => {
+      const delay = 560 + i * 60; // ms
+      s.style.animationDelay = delay + 'ms';
+      // give each shard a random rotation and translateX to add variety
+      const dx = (Math.random() * 80 - 40) + 'px';
+      s.style.transform = 'translateX(' + dx + ')';
+    });
+    // hide loader after the full animation display time (3s) so it's visible enough
+    setTimeout(() => {
+      const loaderEl = document.getElementById('page-loader');
+      if (!loaderEl) return;
+      loaderEl.classList.add('hidden');
+      setTimeout(() => loaderEl.remove(), 480);
+    }, 3000);
+  }
+
+  // Play once after DOM ready (or immediately if already loaded)
+  if (document.readyState === 'complete') playVoteAnimation();
+  else document.addEventListener('DOMContentLoaded', () => setTimeout(playVoteAnimation, 160));
+})();

@@ -1,4 +1,7 @@
 {% extends 'base.html' %}
+{% block page_icon %}
+	<svg class="icon-sm" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10h18M3 6h18M3 14h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+{% endblock %}
 {% block content %}
 <h2>Imported {{ imported }} voters into {{ election.title }}</h2>
 <p><a href="{% url 'admin_dashboard' %}">Back to admin</a></p>

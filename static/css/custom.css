@@ -49,6 +49,12 @@ body.bg-gradient{
 .theme-dark .btn-outline-light:hover { background: rgba(255,255,255,0.03); }
 .theme-dark .btn, .theme-dark .btn-primary { color: #fff; }
 .theme-dark .card { color: #e6eef8; }
+.theme-dark .btn-light { background: rgba(255,255,255,0.06); color: #e6eef8; border-color: rgba(255,255,255,0.06); }
+.theme-dark .btn-light:hover { background: rgba(255,255,255,0.08); }
+.theme-dark .btn-outline-secondary { border-color: rgba(255,255,255,0.08); color: #e6eef8; }
+.theme-dark .btn-outline-secondary:hover { background: rgba(255,255,255,0.03); }
+.theme-dark .btn-link { color: rgba(230,238,248,0.9); }
+.theme-dark .btn-link:hover { color: #fff; text-decoration: underline; }
 .theme-dark input.form-control, .theme-dark textarea.form-control, .theme-dark select.form-control {
   background: rgba(255,255,255,0.02);
   border-color: rgba(255,255,255,0.06);
@@ -61,7 +67,54 @@ body.bg-gradient{
 
 /* Contributors panel */
 .contributors .card { border: none; background: rgba(255,255,255,0.02); }
-.contrib-img { width: 100%; height: 140px; object-fit: cover; border-radius: .45rem; }
+.contrib-img {
+  width: 140px;
+  height: 140px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: center center;
+  border-radius: 50%;
+  display: block;
+  margin: 0 auto;
+  border: 4px solid rgba(255,255,255,0.06);
+  box-shadow: 0 6px 18px rgba(2,6,11,0.35);
+  max-width: none;
+}
+
+/* When an image fails to load we hide it but keep the circular placeholder space
+   so cards remain aligned. The .no-img class is added to the card wrapper by
+   the image onerror handler. */
+.contributors .card.no-img {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.contributors .card.no-img::before {
+  content: '';
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 4px solid rgba(255,255,255,0.03);
+  box-shadow: 0 6px 18px rgba(2,6,11,0.28);
+  display: block;
+  margin-bottom: .5rem;
+}
+
+@media (max-width: 576px) {
+  .contributors .card.no-img::before { width: 110px; height: 110px; }
+}
+
+/* slightly different ring in dark mode for contrast */
+.theme-dark .contrib-img {
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+}
+
+/* responsive adjustments */
+@media (max-width: 576px) {
+  .contrib-img { width: 110px; height: 110px; }
+}
 
 /* make layout fill viewport and keep footer at bottom */
 html, body {
@@ -115,4 +168,72 @@ main {
 /* footer small */
 .footer a { text-decoration: none; }
 .footer .small { opacity: .9; }
+
+/* icon utilities */
+.icon-sm { width: 18px; height:18px; vertical-align:middle; margin-right:6px; fill:currentColor; }
+.nav-icon { width: 16px; height:16px; margin-right:8px; vertical-align:middle; }
+
+/* Page loader overlay */
+.page-loader {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1080; /* above bootstrap modals */
+  background: rgba(5,6,10,0.52);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  transition: opacity 320ms cubic-bezier(.2,.9,.3,1), visibility 320ms ease;
+  opacity: 1;
+  visibility: visible;
+}
+.page-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+/* Vote casting animation */
+.vote-anim { width: 120px; height: 96px; position: relative; display:flex; align-items:center; justify-content:center; }
+.vote-anim .box { width: 84px; height: 58px; background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); border-radius: 8px; position: relative; box-shadow: 0 8px 24px rgba(2,6,11,0.45); }
+.vote-anim .box .slot { position: absolute; left: 50%; transform: translateX(-50%); top: 8px; width: 44px; height: 8px; background: rgba(0,0,0,0.35); border-radius:4px; box-shadow: inset 0 -2px 4px rgba(255,255,255,0.02); }
+.vote-anim .ballot { position: absolute; top: -36px; left: 50%; transform: translateX(-50%); width: 56px; height: 36px; display:flex; align-items:center; justify-content:center; }
+.vote-anim .ballot .paper { width: 48px; height: 28px; background: linear-gradient(180deg, #fff, #f7f7f9); border-radius:4px; box-shadow: 0 8px 18px rgba(2,6,11,0.18); transform-origin: 50% 0%; }
+.vote-anim .tick { position: absolute; width: 44px; height: 44px; opacity: 0; transform: scale(.8); color: var(--brand); transition: transform 320ms cubic-bezier(.2,.9,.3,1), opacity 220ms ease; }
+
+/* confetti shards (subtle) */
+.vote-anim .confetti { position: absolute; inset: 0; pointer-events:none; }
+.vote-anim .confetti .shard { position: absolute; width:6px; height:10px; border-radius:2px; opacity:0; transform: translateY(0) rotate(0); }
+
+/* animation keyframes */
+@keyframes ballot-drop { 0% { transform: translateY(-40px) rotate(-8deg); opacity: 0; } 60% { transform: translateY(6px) rotate(2deg); opacity: 1; } 100% { transform: translateY(0) rotate(0deg); opacity: 1; } }
+@keyframes ballot-insert { 0% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(2px) scaleY(.96); } 100% { transform: translateY(0) scaleY(1); } }
+@keyframes confetti-pop { 0% { opacity: 1; transform: translateY(0) rotate(0); } 100% { opacity: 0; transform: translateY(-40px) rotate(200deg); } }
+
+/* play state classes applied by JS */
+.vote-anim.play .ballot { animation: ballot-drop 520ms cubic-bezier(.2,.9,.3,1) forwards; }
+.vote-anim.play .ballot .paper { animation: ballot-insert 240ms ease 520ms forwards; }
+.vote-anim.play .tick { opacity: 1; transform: scale(1); transition-delay: 700ms; }
+.vote-anim.play .confetti .shard { opacity: 1; animation: confetti-pop 900ms cubic-bezier(.16,.6,.26,1) forwards; }
+
+/* reduced motion safety */
+@media (prefers-reduced-motion: reduce) {
+  .vote-anim .ballot, .vote-anim .ballot .paper, .vote-anim .confetti .shard { animation: none !important; }
+  .vote-anim .tick { opacity: 1; transform: none; }
+}
+
+/* floating decorative icons */
+.float-deco { position: absolute; pointer-events: none; opacity: 0.9; }
+.float-slow { animation: floaty 6s ease-in-out infinite; }
+.float-fast { animation: floaty 3.8s ease-in-out infinite; }
+
+@keyframes floaty {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(6deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+/* small bounce for call-to-action icons */
+.icon-bounce { animation: bounce 2.4s ease-in-out infinite; }
+@keyframes bounce {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
 

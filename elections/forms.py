@@ -29,6 +29,7 @@ class RegistrationForm(forms.Form):
     last_name = forms.CharField(max_length=150, required=False, label='Last name', widget=forms.TextInput(attrs={'class': 'form-control'}))
     email = forms.EmailField(required=False, label='Email', widget=forms.EmailInput(attrs={'class': 'form-control'}))
     phone = forms.CharField(max_length=20, required=False, label='Phone', widget=forms.TextInput(attrs={'class': 'form-control'}))
+    agree_policies = forms.BooleanField(required=True, label='I agree to the Privacy Policy, Terms of Use, and Data Policy')
 
     def clean_username(self):
         u = self.cleaned_data.get('username')

@@ -1,4 +1,7 @@
 {% extends 'base.html' %}
+{% block page_icon %}
+	<svg class="icon-sm" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+{% endblock %}
 {% block content %}
 <h2>Upload Voters for {{ election.title }}</h2>
 <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button type="submit">Upload</button></form>

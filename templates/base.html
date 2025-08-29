@@ -11,6 +11,26 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gradient">
+  <!-- Page loader overlay (shown until the page finishes loading) -->
+  <div id="page-loader" class="page-loader" role="status" aria-live="polite" aria-label="Loading page">
+    <div class="vote-anim" aria-hidden="true">
+      <div class="box" aria-hidden="true">
+        <div class="slot"></div>
+      </div>
+      <div class="ballot" aria-hidden="true">
+        <div class="paper"></div>
+      </div>
+      <div class="confetti" aria-hidden="true">
+        <div class="shard" style="left:10%; top:40%; background: #FFD166;"></div>
+        <div class="shard" style="left:20%; top:30%; background: #06D6A0;"></div>
+        <div class="shard" style="left:36%; top:48%; background: #118AB2;"></div>
+        <div class="shard" style="left:64%; top:40%; background: #EF476F;"></div>
+        <div class="shard" style="left:80%; top:32%; background: #FFD166;"></div>
+      </div>
+      <svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.285 6.709a1 1 0 0 0-1.414-1.418l-9.192 9.2-3.19-3.18a1 1 0 0 0-1.414 1.414l3.9 3.89a1 1 0 0 0 1.414 0l10.096-10.906z" fill="currentColor"/></svg>
+    </div>
+    <span class="visually-hidden">Loading…</span>
+  </div>
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
     <div class="container">
       <a class="navbar-brand d-flex align-items-center" href="{% url 'index' %}">
@@ -26,8 +46,8 @@
       </button>
       <div class="collapse navbar-collapse" id="navCollapse">
         <ul class="navbar-nav ms-auto align-items-lg-center">
-          <li class="nav-item"><a class="nav-link" href="{% url 'index' %}">Home</a></li>
-          <li class="nav-item"><a class="nav-link" href="{% url 'about' %}">About</a></li>
+          <li class="nav-item"><a class="nav-link d-flex align-items-center" href="{% url 'index' %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Home</a></li>
+          <li class="nav-item"><a class="nav-link d-flex align-items-center" href="{% url 'about' %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.2"/><path d="M12 8v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M12 16h.01" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>About</a></li>
           {% if user.is_authenticated %}
             {% if is_admin %}
               <li class="nav-item"><a class="nav-link" href="{% url 'admin_dashboard' %}">Dashboard</a></li>
@@ -51,6 +71,13 @@
           {% else %}
             <li class="nav-item"><a class="btn btn-light btn-sm ms-2" href="{% url 'login' %}">Sign in</a></li>
             <li class="nav-item"><a class="btn btn-outline-light btn-sm ms-2" href="{% url 'register' %}">Register</a></li>
+            <li class="nav-item ms-2">
+              <button id="themeToggle" type="button" class="btn btn-outline-light btn-sm" aria-pressed="false" aria-label="Toggle dark mode" title="Toggle dark mode">
+                <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-moon" viewBox="0 0 16 16">
+                  <path d="M6 .278a.5.5 0 0 1 .57.38A7 7 0 1 0 13.342 9.15.5.5 0 0 1 13.72 9.72 8 8 0 1 1 6 .278z"/>
+                </svg>
+              </button>
+            </li>
           {% endif %}
         </ul>
       </div>
@@ -59,39 +86,55 @@
 
   <main class="py-5">
     <div class="container">
-      {% if messages %}
+  {% if messages %}
         <div class="mb-4">
           {% for message in messages %}
             <div class="alert alert-{{ message.tags }} shadow-sm">{{ message }}</div>
           {% endfor %}
         </div>
       {% endif %}
-      {% block content %}{% endblock %}
+  <div class="mb-3">{% block page_icon %}{% endblock %}</div>
+  {% block content %}{% endblock %}
     </div>
   </main>
 
   <footer class="footer bg-dark text-light py-4 mt-auto">
     <div class="container">
-      <div class="row">
-        <div class="col-md-5">
+      <div class="row align-items-start">
+        <div class="col-12 col-md-4 mb-3 mb-md-0">
           <h5>SafeBallot</h5>
           <p class="small">Secure, anonymous online voting for student clubs and committees.</p>
-          <p class="small mb-0">Address: 123 University Ave, City, Country</p>
-          <p class="small">Contact: <a href="mailto:info@safeballot.example" class="link-light">info@safeballot.example</a></p>
+          <p class="small mb-0">Address: 111 Kawla Road, Dakkhinkhan, Dhaka, Bangladesh</p>
+          <p class="small"><strong> <a href="mailto:mdrokibulislam.nub@gmail.com" class="link-blue">mdrokibulislam.nub@gmail.com</a></p></strong>
         </div>
-        <div class="col-md-3">
-          <h6>Product</h6>
-          <ul class="list-unstyled small">
+
+        <div class="col-12 col-md-4 text-center mb-3 mb-md-0">
+          <h6><svg class="icon-sm" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18" stroke-width="1.4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Product</h6>
+          <ul class="list-unstyled small d-inline-block mb-2">
             <li><a class="link-light" href="{% url 'index' %}">Home</a></li>
-            <li><a class="link-light" href="#about">About</a></li>
+            <li><a class="link-light" href="{% url 'about' %}">About</a></li>
           </ul>
+          <p class="small mb-1">&copy; SafeBallot {% now "Y" %}</p>
+          <div class="small">
+            <a class="link-light me-2 d-inline-flex align-items-center" href="{% url 'privacy' %}"><svg class="icon-sm" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2l7 4v6c0 5-4 9-7 10-3-1-7-5-7-10V6l7-4z" fill="currentColor"/></svg>Privacy</a>
+            <a class="link-light me-2 d-inline-flex align-items-center" href="{% url 'terms' %}"><svg class="icon-sm" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 4h16v2H4zM4 10h16v2H4zM4 16h16v2H4z" fill="currentColor"/></svg>Terms</a>
+            <a class="link-light d-inline-flex align-items-center" href="{% url 'data_policy' %}"><svg class="icon-sm" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2a7 7 0 1 0 7 7 7 7 0 0 0-7-7zm0 2a5 5 0 1 1-5 5 5 5 0 0 1 5-5z" fill="currentColor"/></svg>Data Policy</a>
+          </div>
         </div>
-        <div class="col-md-4 text-md-end">
-          <h6>Follow</h6>
-          <a class="btn btn-outline-light btn-sm me-1" href="#" aria-label="twitter">Twitter</a>
-          <a class="btn btn-outline-light btn-sm" href="#" aria-label="github">GitHub</a>
-          <p class="mt-3 small mb-0">&copy; SafeBallot {% now "Y" %}</p>
+
+        <div class="col-12 col-md-4 text-md-end text-center">
+          <h6><svg class="icon-sm" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M22 4.01c-.77.34-1.6.57-2.47.67a4.3 4.3 0 0 0-7.33 3.91A12.2 12.2 0 0 1 3 4.73a4.28 4.28 0 0 0 1.32 5.72c-.63-.02-1.23-.2-1.75-.49v.05a4.3 4.3 0 0 0 3.44 4.21c-.35.1-.72.12-1.09.04.31.98 1.22 1.7 2.29 1.72A8.6 8.6 0 0 1 2 19.54a12.1 12.1 0 0 0 6.56 1.92c7.88 0 12.2-6.53 12.2-12.2 0-.19 0-.37-.01-.56A8.7 8.7 0 0 0 22 4.01z" fill="currentColor"/></svg>Follow</h6>
+          <a class="btn btn-outline-light btn-sm me-1 hover-lift" href="https://x.com/rokibul_islam09" aria-label="X">
+            <svg class="icon-sm icon-bounce" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M3 3 L21 21 M21 3 L3 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+            X
+          </a>
+          <a class="btn btn-outline-light btn-sm hover-lift" href="https://github.com/webdoc-rokib/" aria-label="github"><svg class="icon-sm icon-bounce" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.11.82-.26.82-.58v-2.1c-3.34.73-4.04-1.6-4.04-1.6-.54-1.38-1.32-1.75-1.32-1.75-1.08-.74.08-.73.08-.73 1.2.09 1.83 1.23 1.83 1.23 1.06 1.82 2.78 1.3 3.46.99.11-.77.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.5.12-3.12 0 0 1.01-.32 3.3 1.23a11.4 11.4 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.62.24 2.82.12 3.12.77.84 1.24 1.91 1.24 3.22 0 4.62-2.8 5.64-5.47 5.94.43.36.81 1.08.81 2.18v3.23c0 .32.22.69.82.57A12 12 0 0 0 12 .5z" fill="currentColor"/></svg>GitHub</a>
         </div>
+        <!-- decorative floating SVGs -->
+        <svg class="float-deco float-slow d-none d-md-block" style="right:8%; bottom:22px; width:48px; height:48px; position:absolute;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.06)" stroke-width="1.2"/></svg>
+        <svg class="float-deco float-fast d-none d-md-block" style="left:6%; bottom:10px; width:36px; height:36px; position:absolute;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2c3 3 6 3 8 5s2 5 0 8-3 6-8 8c-5-2-7-5-8-8s0-5 4-8 4-5 4-5z" fill="rgba(255,255,255,0.04)"/></svg>
       </div>
     </div>
   </footer>

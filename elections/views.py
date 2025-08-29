@@ -37,6 +37,21 @@ def about(request):
     return render(request, 'about.html')
 
 
+def privacy_page(request):
+    """Render the privacy policy page."""
+    return render(request, 'privacy.html')
+
+
+def terms_page(request):
+    """Render the terms of use page."""
+    return render(request, 'terms.html')
+
+
+def data_policy_page(request):
+    """Render the data policy page."""
+    return render(request, 'data_policy.html')
+
+
 def user_logout(request):
     # only allow POST logout to avoid CSRF-sensitive GETs
     if request.method != 'POST':
@@ -55,8 +70,18 @@ def register(request):
             user.first_name = data.get('first_name', '')
             user.last_name = data.get('last_name', '')
             user.save()
-            # create profile (unconfirmed and unapproved)
-            Profile.objects.create(user=user, phone=data.get('phone', ''), role='voter', is_confirmed=False, is_approved=False)
+            # create or update profile (unconfirmed and unapproved).
+            # A post_save signal may already have created a Profile for this User,
+            # so update the existing one instead of blindly creating another.
+            try:
+                profile = user.profile
+                profile.phone = data.get('phone', '')
+                profile.role = 'voter'
+                profile.is_confirmed = False
+                profile.is_approved = False
+                profile.save()
+            except Profile.DoesNotExist:
+                Profile.objects.create(user=user, phone=data.get('phone', ''), role='voter', is_confirmed=False, is_approved=False)
 
             # generate confirmation token and send email (if email provided)
             email = data.get('email')

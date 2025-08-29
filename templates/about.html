@@ -1,11 +1,15 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}About — SafeBallot{% endblock %}
+{% block page_icon %}
+  <svg class="icon-sm me-2 float-none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="4"/></svg>
+{% endblock %}
 {% block content %}
 
 <div class="row mb-4">
   <div class="col-12">
     <div class="p-4 rounded shadow-sm" style="background: linear-gradient(90deg, rgba(11,37,84,0.06), rgba(124,58,237,0.03));">
-      <h1 class="mb-2">SafeBallot</h1>
+  <h1 class="mb-2 d-inline">SafeBallot</h1>
       <p class="lead mb-0">Secure, private, and easy-to-use online voting built for clubs, societies, and small organizations.</p>
     </div>
   </div>
@@ -104,37 +108,28 @@
   <div class="contributors row g-3">
     <div class="col-sm-6 col-md-3">
       <div class="card text-center p-3">
-        <img src="https://via.placeholder.com/140?text=Dev+1" alt="Dev 1" class="contrib-img mb-2">
-        <h6 class="mb-0">Alex Developer</h6>
+        <img src="{% static 'img/rokib.jpg' %}" alt="Dev 1" class="contrib-img mb-2">
+        <h6 class="mb-0">MD Rokibul Islam</h6>
         <p class="small text-muted mb-1">Lead developer</p>
+        <p><a href="https://github.com/webdoc-rokib/" target="_blank" class="small">GitHub</a></p>
+      </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <div class="card text-center p-3">
+        <img src="{% static 'img/arnob.jpg' %}" alt="Dev 2" class="contrib-img mb-2" loading="lazy" onerror="this.style.visibility='hidden';this.parentNode.classList.add('no-img')">
+        <h6 class="mb-0">Arnob Banik</h6>
+        <p class="small text-muted mb-1">Frontend</p>
         <p><a href="#" class="small">GitHub</a></p>
       </div>
     </div>
     <div class="col-sm-6 col-md-3">
       <div class="card text-center p-3">
-        <img src="https://via.placeholder.com/140?text=Dev+2" alt="Dev 2" class="contrib-img mb-2">
-        <h6 class="mb-0">Rokib</h6>
-        <p class="small text-muted mb-1">Backend</p>
-        <p><a href="#" class="small">GitHub</a></p>
-      </div>
-    </div>
-    <div class="col-sm-6 col-md-3">
-      <div class="card text-center p-3">
-        <img src="https://via.placeholder.com/140?text=Dev+3" alt="Dev 3" class="contrib-img mb-2">
-        <h6 class="mb-0">Taylor Tester</h6>
+        <img src="{% static 'img/mintu.jpg' %}" alt="Dev 3" class="contrib-img mb-2" loading="lazy" onerror="this.style.visibility='hidden';this.parentNode.classList.add('no-img')">
+        <h6 class="mb-0">Mintu Chandra Das</h6>
         <p class="small text-muted mb-1">QA</p>
         <p><a href="#" class="small">GitHub</a></p>
       </div>
     </div>
-    <div class="col-sm-6 col-md-3">
-      <div class="card text-center p-3">
-        <img src="https://via.placeholder.com/140?text=Dev+4" alt="Dev 4" class="contrib-img mb-2">
-        <h6 class="mb-0">Sam Designer</h6>
-        <p class="small text-muted mb-1">UX/Design</p>
-        <p><a href="#" class="small">GitHub</a></p>
-      </div>
-    </div>
-  </div>
 </section>
 
 {% endblock %}

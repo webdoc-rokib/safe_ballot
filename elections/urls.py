@@ -8,6 +8,9 @@ urlpatterns = [
     path('logout/', views.user_logout, name='logout'),
     path('dashboard/', views.voter_dashboard, name='voter_dashboard'),
     path('about/', views.about, name='about'),
+    path('privacy/', views.privacy_page, name='privacy'),
+    path('terms/', views.terms_page, name='terms'),
+    path('data-policy/', views.data_policy_page, name='data_policy'),
     path('vote/<int:election_id>/', views.vote_view, name='vote'),
     path('results/<int:election_id>/', views.results_view, name='results'),
     path('manage-dashboard/', views.admin_dashboard, name='admin_dashboard'),
@@ -21,4 +24,7 @@ urlpatterns = [
     path('manage/<int:election_id>/candidates/', views.list_candidates, name='list_candidates'),
     path('manage/<int:election_id>/candidates/<int:candidate_id>/edit/', views.edit_candidate, name='edit_candidate'),
     path('manage/<int:election_id>/candidates/<int:candidate_id>/delete/', views.delete_candidate, name='delete_candidate'),
+    path('confirm-email/', views.confirm_email, name='confirm_email'),
+    path('manage/pending-users/', views.admin_pending_users, name='admin_pending_users'),
+    path('manage/approve-user/<int:profile_id>/', views.admin_approve_user, name='admin_approve_user'),
 ]
