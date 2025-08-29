@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Data Policy</h2>
+  <p>Effective date: August 29, 2025</p>
+
+  <h3>1. Purpose</h3>
+  <p>This Data Policy summarizes how SafeBallot stores, retains, and deletes data related to elections, accounts, and backups.</p>
+
+  <h3>2. Encrypted ballots</h3>
+  <p>Ballots are stored as encrypted ciphertexts. Retention of ciphertexts must be governed by organizational policy because re-encrypting or rotating keys without reprocessing ballots will render older ballots irrecoverable. If you choose to retain ballots long-term, store keys in a KMS and retain access logs.</p>
+
+  <h3>3. Account data and PII</h3>
+  <p>Account PII (email, phone) should be retained only as long as necessary for the purposes of the election and auditing (suggested default: 1 year). After the retention period PII should be deleted or anonymized.</p>
+
+  <h3>4. Backups</h3>
+  <p>Backups must be encrypted, access-controlled, and rotated according to the retention schedule. Ensure that backup expiration results in the deletion of sensitive copies.
+  </p>
+
+  <h3>5. Deletion</h3>
+  <p>Deletion of ciphertexts and backups is required to fully remove ballots; simply deleting user accounts does not remove ballots that are stored anonymously. Deletion operations must be logged and audited.</p>
+
+  <h3>6. Access control</h3>
+  <p>Access to keys, backups, and audit logs must be restricted to authorized personnel and logged. Use role-based access control in production environments.</p>
+
+  <h3>7. Legal and compliance</h3>
+  <p>Follow jurisdictional requirements for data retention when operating in production. Consult legal counsel for public elections.</p>
+
+  <h3>8. More detail</h3>
+  <p>See <code>DATA_RETENTION.md</code> in the repository for a more detailed retention schedule and operational guidance.</p>
+</div>
+{% endblock %}

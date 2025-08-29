@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Privacy Policy</h2>
+  <p>Effective date: August 29, 2025</p>
+
+  <h3>1. Overview</h3>
+  <p>SafeBallot is a privacy-first voting prototype. This Privacy Policy explains what personal data we collect, why we collect it, how we use it, and your rights. This policy applies to use of the SafeBallot application and related services.</p>
+
+  <h3>2. Data we collect</h3>
+  <ul>
+    <li><strong>Account information:</strong> username, first and last name, email address, and phone (optional). Used for account management and notifications.</li>
+    <li><strong>Voter eligibility lists:</strong> usernames or identifiers used to determine which users may vote in each election.</li>
+    <li><strong>Ballots:</strong> encrypted ciphertexts representing votes. The system stores ciphertexts only and does not associate ciphertexts with user identifiers.</li>
+    <li><strong>Audit logs:</strong> administrative and system events necessary for security and troubleshooting.</li>
+  </ul>
+
+  <h3>3. Purpose and lawful basis</h3>
+  <p>We collect account information to provide authentication, notifications, and account recovery. Ballots are collected to compute election results while preserving voter privacy. Audit logs are retained for security and compliance.</p>
+
+  <h3>4. How we store and protect data</h3>
+  <p>Ballots are encrypted using AES-GCM with a server-held key. Access to secrets and production keys must be managed in a secure secrets store (KMS, Vault) and limited to authorized personnel. Backups should be encrypted and access-controlled.</p>
+
+  <h3>5. Retention and deletion</h3>
+  <p>Reference our <a href="{% url 'data_policy' %}">Data Policy</a> for retention schedules. Users may request deletion of their account information; note that ballots stored anonymously cannot be reliably removed if they are not linkable to an account.</p>
+
+  <h3>6. Sharing and disclosure</h3>
+  <p>We do not sell personal data. Ballots (ciphertexts) are not shared except for auditing under strict controls. Aggregate results may be published when elections conclude.</p>
+
+  <h3>7. Your rights</h3>
+  <p>You may request access to or deletion of your account information by contacting the system administrator via the repository issue tracker or the support email listed in the footer.</p>
+
+  <h3>8. Contact</h3>
+  <p>For privacy inquiries, open an issue on the repository or email the contact address in the footer.</p>
+</div>
+{% endblock %}
