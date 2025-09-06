@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.db.models import Count, Q
 from django.db.models.functions import TruncHour
 from datetime import timedelta
-from .models import Election, Candidate, Vote, VoterStatus
+from .models import Election, Candidate, Vote, VoterStatus, Feedback
 from .forms import VoteForm
 from .utils.crypto import encrypt_vote, decrypt_vote
 from .forms import ElectionForm, VoterUploadForm
@@ -618,6 +618,11 @@ def admin_dashboard(request):
     chart_labels_json = json.dumps(hourly_labels)
     chart_values_json = json.dumps(hourly_counts)
 
+    # Recent feedback for superusers only
+    recent_feedback = []
+    if getattr(request.user, 'is_superuser', False):
+        recent_feedback = list(Feedback.objects.order_by('-created_at')[:5])
+
     context = {
     'elections': elections_list,
         'total_elections': total_elections,
@@ -630,6 +635,7 @@ def admin_dashboard(request):
         'ending_soon': ending_soon,
         'activity_labels_json': chart_labels_json,
         'activity_values_json': chart_values_json,
+        'recent_feedback': recent_feedback,
     }
     return render(request, 'admin_dashboard.html', context)
 
