@@ -7,10 +7,17 @@
 <h2>Candidates for {{ election.title }}</h2>
 <p><a class="btn btn-primary" href="{% url 'create_candidate' election.id %}">Create Candidate</a></p>
 <table class="table">
-  <thead><tr><th>Name</th><th>Bio</th><th>Votes</th><th></th></tr></thead>
+  <thead><tr><th>Photo</th><th>Name</th><th>Bio</th><th>Votes</th><th></th></tr></thead>
   <tbody>
     {% for c in candidates %}
       <tr>
+        <td>
+          {% if c.photo %}
+            <img src="{{ c.photo.url }}" alt="{{ c.name }}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;"/>
+          {% else %}
+            <span class="text-muted small">No photo</span>
+          {% endif %}
+        </td>
         <td>{{ c.name }}</td>
         <td>{{ c.bio|truncatechars:80 }}</td>
   <td>{{ tally|get_item:c.id|default:0 }}</td>

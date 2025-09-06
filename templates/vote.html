@@ -13,6 +13,9 @@
           <div class="col-md-6">
             <label class="card p-3 h-100 candidate-option d-flex align-items-start gap-3" tabindex="0">
               <input type="radio" name="candidate_id" id="cand-{{ c.id }}" value="{{ c.id }}" class="form-check-input me-2" aria-label="Select {{ c.name }}" required>
+              {% if c.photo %}
+                <img src="{{ c.photo.url }}" alt="{{ c.name }}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;"/>
+              {% endif %}
               <div>
                 <strong id="cand-label-{{ c.id }}">{{ c.name }}</strong>
                 <div class="text-muted small">{{ c.bio|default:'No bio' }}</div>

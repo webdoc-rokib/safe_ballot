@@ -921,13 +921,13 @@ def create_candidate(request, election_id):
     if not _is_super_or_owner(request.user, election):
         return HttpResponseForbidden('Not allowed to manage candidates for this election')
     if request.method == 'POST':
-        form = CandidateForm(request.POST)
+        form = CandidateForm(request.POST, request.FILES)
         if form.is_valid():
             Candidate.objects.create(
                 election=election,
                 name=form.cleaned_data['name'],
                 bio=form.cleaned_data['bio'],
-                photo=form.cleaned_data['photo'] or None,
+                photo=form.cleaned_data.get('photo') or None,
             )
             return redirect('admin_dashboard')
     else:
@@ -979,11 +979,14 @@ def edit_candidate(request, election_id, candidate_id):
         messages.error(request, 'Not allowed to edit this candidate')
         return redirect('admin_dashboard')
     if request.method == 'POST':
-        form = CandidateForm(request.POST)
+        form = CandidateForm(request.POST, request.FILES)
         if form.is_valid():
             candidate.name = form.cleaned_data['name']
             candidate.bio = form.cleaned_data['bio']
-            # photo handling skipped for brevity
+            # update photo only if a new file is provided
+            new_photo = form.cleaned_data.get('photo')
+            if new_photo:
+                candidate.photo = new_photo
             candidate.save()
             return redirect('list_candidates', election_id=election_id)
     else:
