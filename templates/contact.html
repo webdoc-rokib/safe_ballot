@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Contact · SafeBallot{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card elevation-1 shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h4 mb-3">Contact us</h1>
+        <p class="text-muted">Have a question, feature idea, or issue? Send us a note and we'll get back to you.</p>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Name</label>
+              {{ form.name }}
+              {% if form.name.errors %}<div class="invalid-feedback d-block">{{ form.name.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              {{ form.email }}
+              {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label">Subject</label>
+              {{ form.subject }}
+              {% if form.subject.errors %}<div class="invalid-feedback d-block">{{ form.subject.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label">Message</label>
+              {{ form.message }}
+              {% if form.message.errors %}<div class="invalid-feedback d-block">{{ form.message.errors|striptags }}</div>{% endif %}
+            </div>
+          </div>
+          <div class="d-flex align-items-center mt-4">
+            <button class="btn btn-primary px-4" type="submit">Send message</button>
+            {% if sent %}<span class="ms-3 text-success">Sent. We'll reply soon.</span>{% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

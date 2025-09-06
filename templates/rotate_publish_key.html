@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h4 class="mb-3">Rotate publish key — {{ election.title }}</h4>
+    <form method="post">{% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">Current key</label>
+        <input type="password" name="current_key" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">New key</label>
+        <input type="password" name="new_key" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Confirm new key</label>
+        <input type="password" name="confirm_new_key" class="form-control" required>
+      </div>
+      <button class="btn btn-primary">Update key</button>
+      <a class="btn btn-link" href="{% url 'admin_election_list' election.status %}">Cancel</a>
+    </form>
+  </div>
+  <div class="card-footer small text-muted">Keep your publish key secret. You will need it to publish results.</div>
+  </div>
+{% endblock %}

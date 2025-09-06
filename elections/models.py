@@ -20,6 +20,16 @@ class Election(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    # Owner/creator of the election (used for admin-scoped management)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_elections')
+    # One-time publish key (stored as a secure hash); required for admins to publish results.
+    publish_key_hash = models.CharField(max_length=128, null=True, blank=True)
+    # Audit details for publishing
+    published_at = models.DateTimeField(null=True, blank=True)
+    published_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='published_elections')
+    # Rate limiting for publish key verification
+    publish_attempts = models.IntegerField(default=0)
+    publish_blocked_until = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.title

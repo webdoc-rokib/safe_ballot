@@ -4,48 +4,150 @@
 {% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="mb-0">Admin Dashboard</h2>
   <div>
+    <h2 class="mb-0">Admin Dashboard</h2>
+    <div class="text-muted small">Monitor election activity, turnout, and approvals at a glance.</div>
+  </div>
+  <div class="d-flex">
     <a class="btn btn-primary" href="{% url 'create_election' %}">Create Election</a>
     <a class="btn btn-outline-secondary ms-2" href="{% url 'admin_pending_users' %}">Pending Approvals</a>
   </div>
 </div>
 
-<div class="row g-3">
-  {% for e in elections %}
-    <div class="col-md-6">
-      <div class="card shadow-sm h-100">
-        <div class="card-body d-flex flex-column">
-          <h5 class="card-title"><i data-feather="layers" class="icon"></i>{{ e.title }}</h5>
-          <p class="text-muted">{{ e.description|default:'No description' }}</p>
-          <div class="mt-auto d-flex justify-content-between align-items-center">
-            <div class="small text-muted">Ends: {{ e.end_time }}</div>
-            <div>
-              <a class="btn btn-sm btn-outline-primary me-2" href="{% url 'list_candidates' e.id %}"><i data-feather="users" class="icon"></i>Candidates</a>
-              <a class="btn btn-sm btn-outline-secondary me-2" href="{% url 'upload_voters' e.id %}"><i data-feather="upload" class="icon"></i>Upload Voters</a>
-              <a class="btn btn-sm btn-primary" href="{% url 'edit_election' e.id %}"><i data-feather="edit" class="icon"></i>Edit</a>
-              {% if e.status != 'concluded' %}
-              <form method="post" action="{% url 'publish_results' e.id %}" style="display:inline">{% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-warning ms-2">Publish Results</button>
-              </form>
-              {% else %}
-                <span class="badge bg-success ms-2">Published</span>
-              {% endif %}
-            </div>
-          </div>
-          {% if e.status == 'concluded' %}
-            <div class="mt-3">
-              <a class="btn btn-sm btn-outline-secondary" href="{% url 'results' e.id %}">View Results</a>
-            </div>
-          {% endif %}
-            </div>
-          </div>
+<!-- KPI cards: Active / Pending / Concluded -->
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-4">
+    <a class="card kpi-card p-3 d-block text-decoration-none" href="{% url 'admin_election_list' 'active' %}">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="kpi-label">Active</div>
+          <div class="kpi-value">{{ counts_by_status.active }}</div>
+        </div>
+        <div class="kpi-icon bg-primary-subtle"><svg class="icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M4 7h16M7 17h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4">
+    <a class="card kpi-card p-3 d-block text-decoration-none" href="{% url 'admin_election_list' 'pending' %}">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="kpi-label">Pending</div>
+          <div class="kpi-value">{{ counts_by_status.pending }}</div>
+        </div>
+        <div class="kpi-icon bg-warning-subtle"><svg class="icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 18H3L12 3z" fill="currentColor" opacity=".2"/><path d="M12 9v4m0 4h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-4">
+    <a class="card kpi-card p-3 d-block text-decoration-none" href="{% url 'admin_election_list' 'concluded' %}">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="kpi-label">Concluded</div>
+          <div class="kpi-value">{{ counts_by_status.concluded }}</div>
+        </div>
+        <div class="kpi-icon bg-info-subtle"><svg class="icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- KPI cards: Votes today / Avg turnout -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-6">
+    <div class="card kpi-card p-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="kpi-label">Votes today</div>
+          <div class="kpi-value">{{ votes_today }}</div>
+        </div>
+        <div class="kpi-icon bg-success-subtle"><svg class="icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+      </div>
+    </div>
+    <div class="alert alert-secondary mt-3">
+      Manage elections by status: 
+      <a class="alert-link" href="{% url 'admin_election_list' 'active' %}">Active</a>,
+      <a class="alert-link" href="{% url 'admin_election_list' 'pending' %}">Pending</a>,
+      <a class="alert-link" href="{% url 'admin_election_list' 'concluded' %}">Concluded</a>.
+    </div>
+  </div>
+  <div class="col-6 col-md-6">
+    <div class="card kpi-card p-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="kpi-label">Avg turnout</div>
+          <div class="kpi-value">{{ avg_turnout_pct }}%</div>
+        </div>
+        <div class="kpi-icon bg-info-subtle"><svg class="icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M6 18V8m6 10V4m6 14v-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 align-items-stretch">
+  <div class="col-12 col-lg-8">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Activity (last 24h)</h5>
+        </div>
+        <div class="ratio ratio-16x9">
+          <canvas id="activityChart"></canvas>
         </div>
       </div>
     </div>
-  {% empty %}
-    <div class="col-12"><div class="alert alert-info">No elections yet. Create one to get started.</div></div>
-  {% endfor %}
-</div>
+  </div>
+  <div class="col-12 col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="mb-3">Ending soon</h5>
+        {% if ending_soon %}
+          <ul class="list-group list-group-flush">
+            {% for e in ending_soon %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold">{{ e.title }}</div>
+                  <div class="small text-muted">Ends: {{ e.end_time }}</div>
+                </div>
+                <span class="badge text-bg-warning">{{ e.turnout_pct|default:0 }}%</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="text-muted small">No elections ending in the next 48 hours.</div>
+        {% endif %}
+        <hr/>
+        <h6 class="mb-1">Voters</h6>
+        <div class="small text-muted">Total: <strong>{{ voters_total }}</strong> • Confirmed: <strong>{{ voters_confirmed }}</strong></div>
+        <div class="mt-2">
+          <a class="btn btn-outline-secondary btn-sm" href="{% url 'admin_pending_users' %}">Approve pending ({{ approvals_pending }})</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
 
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  (function(){
+    const labels = JSON.parse('{{ activity_labels_json|escapejs }}');
+    const values = JSON.parse('{{ activity_values_json|escapejs }}');
+    const ctx = document.getElementById('activityChart');
+    if (!ctx) return;
+    const isDark = document.documentElement.classList.contains('theme-dark');
+    const axis = isDark ? 'rgba(230,238,248,0.7)' : 'rgba(15,23,42,0.7)';
+    const grid = isDark ? 'rgba(230,238,248,0.12)' : 'rgba(15,23,42,0.08)';
+    new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets:[{ label:'Votes', data:values, backgroundColor: isDark ? 'rgba(43,140,255,0.8)' : 'rgba(13,110,253,0.8)' }] },
+      options: {
+        responsive:true,
+        maintainAspectRatio:false,
+        scales: { x: { grid: { color:grid }, ticks:{ color:axis } }, y:{ grid:{ color:grid }, ticks:{ color:axis } } },
+        plugins: { legend: { labels: { color: axis } } }
+      }
+    });
+  })();
+</script>
 {% endblock %}

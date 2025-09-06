@@ -21,6 +21,30 @@ class CandidateForm(forms.Form):
     photo = forms.ImageField(required=False, widget=forms.ClearableFileInput(attrs={'class': 'form-control'}))
 
 
+
+class PublishKeyRotateForm(forms.Form):
+    current_key = forms.CharField(
+        max_length=64,
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Current publish key'}),
+        label='Current key'
+    )
+    new_key = forms.CharField(
+        max_length=64,
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'New publish key'}),
+        label='New key'
+    )
+    confirm_new_key = forms.CharField(
+        max_length=64,
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm new publish key'}),
+        label='Confirm new key'
+    )
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('new_key') != cleaned.get('confirm_new_key'):
+            raise forms.ValidationError('New keys do not match')
+        return cleaned
+
+
 class RegistrationForm(forms.Form):
     username = forms.CharField(max_length=150, label='Username', widget=forms.TextInput(attrs={'class': 'form-control'}))
     password1 = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), label='Password')
@@ -45,3 +69,10 @@ class RegistrationForm(forms.Form):
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError('Passwords do not match')
         return cleaned
+
+
+class ContactForm(forms.Form):
+    name = forms.CharField(max_length=120, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your name'}))
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'you@example.com'}))
+    subject = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Subject'}))
+    message = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Write your message...'}))

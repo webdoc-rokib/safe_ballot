@@ -5,14 +5,19 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .forms import RegistrationForm
+from .forms import ContactForm
 from django.contrib.auth.models import User
 from .models import Profile
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.db.models import Count, Q
+from django.db.models.functions import TruncHour
+from datetime import timedelta
 from .models import Election, Candidate, Vote, VoterStatus
 from .forms import VoteForm
 from .utils.crypto import encrypt_vote, decrypt_vote
 from .forms import ElectionForm, VoterUploadForm
+from .forms import PublishKeyRotateForm
 from .forms import CandidateForm
 from datetime import datetime, timezone as _timezone
 import csv
@@ -26,10 +31,94 @@ from django.conf import settings
 
 
 def index(request):
-    # show currently active elections
+    # Enhanced home with active/upcoming elections and stats
     now = timezone.now()
-    elections = Election.objects.filter(start_time__lte=now, end_time__gte=now)
-    return render(request, 'index.html', {'elections': elections})
+    # Auto-sync statuses so pending -> active when start_time passes
+    _sync_election_statuses()
+    # Active elections with quick metrics, filtered by role
+    active_qs = Election.objects.filter(start_time__lte=now, end_time__gte=now)
+    if request.user.is_authenticated:
+        # Superusers see all
+        if getattr(request.user, 'is_superuser', False):
+            pass
+        else:
+            # Admins see only their own; voters only eligible
+            try:
+                if request.user.profile.role == 'admin':
+                    active_qs = active_qs.filter(created_by=request.user)
+                else:
+                    active_qs = active_qs.filter(voterstatus__user=request.user)
+            except Exception:
+                active_qs = active_qs.filter(voterstatus__user=request.user)
+    else:
+        # Anonymous users do not see restricted elections
+        active_qs = active_qs.none()
+
+    active = (
+        active_qs
+        .annotate(
+            candidates_count=Count('candidates', distinct=True),
+            votes_cast=Count('votes', distinct=True),
+        )
+        .order_by('end_time')
+    )
+    # Upcoming elections (role-scoped)
+    upcoming_qs = Election.objects.filter(start_time__gt=now)
+    if request.user.is_authenticated:
+        if getattr(request.user, 'is_superuser', False):
+            pass
+        else:
+            try:
+                if request.user.profile.role == 'admin':
+                    upcoming_qs = upcoming_qs.filter(created_by=request.user)
+                else:
+                    upcoming_qs = upcoming_qs.filter(voterstatus__user=request.user)
+            except Exception:
+                upcoming_qs = upcoming_qs.filter(voterstatus__user=request.user)
+    else:
+        upcoming_qs = upcoming_qs.none()
+    upcoming = upcoming_qs.order_by('start_time')[:6]
+
+    # Recently concluded (role-scoped)
+    concluded_qs = Election.objects.filter(status='concluded')
+    if request.user.is_authenticated:
+        if getattr(request.user, 'is_superuser', False):
+            pass
+        else:
+            try:
+                if request.user.profile.role == 'admin':
+                    concluded_qs = concluded_qs.filter(created_by=request.user)
+                else:
+                    concluded_qs = concluded_qs.filter(voterstatus__user=request.user)
+            except Exception:
+                concluded_qs = concluded_qs.filter(voterstatus__user=request.user)
+    else:
+        concluded_qs = concluded_qs.none()
+    concluded_recent = concluded_qs.order_by('-end_time')[:2]
+
+    # Totals and average turnout across elections with eligible > 0
+    total_elections = Election.objects.count()
+    total_votes = Vote.objects.count()
+
+    # average turnout: avg(votes/eligible) per election
+    turnouts = []
+    for e in Election.objects.all():
+        eligible = VoterStatus.objects.filter(election=e).count()
+        votes_cast = Vote.objects.filter(election=e).count()
+        if eligible > 0:
+            turnouts.append(votes_cast / eligible)
+    avg_turnout_pct = round((sum(turnouts) / len(turnouts) * 100), 2) if turnouts else 0
+
+    context = {
+        'elections': active,
+        'upcoming': upcoming,
+        'concluded_recent': concluded_recent,
+        'total_elections': total_elections,
+        'total_votes': total_votes,
+        'avg_turnout_pct': avg_turnout_pct,
+        'now': now,
+    }
+    return render(request, 'index.html', context)
 
 
 def about(request):
@@ -50,6 +139,39 @@ def terms_page(request):
 def data_policy_page(request):
     """Render the data policy page."""
     return render(request, 'data_policy.html')
+
+
+def how_it_works_page(request):
+    return render(request, 'how_it_works.html')
+
+
+def social_proof_page(request):
+    return render(request, 'social_proof.html')
+
+
+def contact_page(request):
+    """Contact/feedback form. Sends an email via configured email backend. Always shows success in dev."""
+    sent = False
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            subject = f"[SafeBallot Contact] {cd['subject']}"
+            body = f"From: {cd['name']} <{cd['email']}>)\n\n{cd['message']}"
+            try:
+                send_mail(subject, body,
+                          settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@example.com',
+                          [getattr(settings, 'CONTACT_RECEIVER_EMAIL', 'noreply@example.com')])
+                sent = True
+                messages.success(request, 'Thanks! Your message has been sent.')
+            except Exception:
+                # In dev, still show success to avoid exposing config
+                messages.info(request, 'Message recorded (dev).')
+                sent = True
+            form = ContactForm()  # reset form
+    else:
+        form = ContactForm()
+    return render(request, 'contact.html', {'form': form, 'sent': sent})
 
 
 def user_logout(request):
@@ -170,14 +292,22 @@ def user_login(request):
 
 @login_required
 def voter_dashboard(request):
-    # list elections the user is eligible for
-    statuses = VoterStatus.objects.filter(user=request.user)
-    return render(request, 'voter_dashboard.html', {'statuses': statuses})
+    # list elections the user is eligible for (voters only)
+    now = timezone.now()
+    _sync_election_statuses()
+    statuses = (
+        VoterStatus.objects
+        .filter(user=request.user, election__start_time__lte=now, election__end_time__gte=now)
+        .select_related('election')
+        .order_by('election__end_time')
+    )
+    return render(request, 'voter_dashboard.html', {'statuses': statuses, 'now': now})
 
 
 @login_required
 def vote_view(request, election_id):
     election = get_object_or_404(Election, pk=election_id)
+    # Only eligible voters can vote; admins/superusers cannot cast votes by default
     try:
         status = VoterStatus.objects.get(user=request.user, election=election)
     except VoterStatus.DoesNotExist:
@@ -205,9 +335,24 @@ def vote_view(request, election_id):
 
 def results_view(request, election_id):
     election = get_object_or_404(Election, pk=election_id)
-    # Allow results to be viewed when election has concluded OR has been published
-    if not (timezone.now() >= election.end_time or election.status == 'concluded'):
-        return HttpResponseForbidden('Results are not available until election has concluded or published by an admin')
+    # Results visible when election concluded; visibility scope:
+    # - Superusers/staff: all
+    # - Admins: their own elections
+    # - Voters: only if eligible
+    concluded = (timezone.now() >= election.end_time or election.status == 'concluded')
+    if not concluded:
+        return HttpResponseForbidden('Results are not available until election has concluded')
+    user = request.user
+    if not user.is_authenticated:
+        return HttpResponseForbidden('Sign in to view results')
+    if getattr(user, 'is_superuser', False):
+        pass
+    elif _is_super_or_owner(user, election):
+        pass
+    else:
+        # Voters may view only if eligible for this election
+        if not VoterStatus.objects.filter(user=user, election=election).exists():
+            return HttpResponseForbidden('You are not eligible to view results for this election')
 
     votes = election.votes.all()
     decrypted = [decrypt_vote(v.encrypted_vote_data, associated_data=str(election.id)) for v in votes]
@@ -313,6 +458,13 @@ def export_results_csv(request, election_id):
     election = get_object_or_404(Election, pk=election_id)
     if timezone.now() < election.end_time:
         return HttpResponseForbidden('Results are not available until election has concluded')
+    # Visibility per role
+    u = request.user
+    if getattr(u, 'is_superuser', False) or _is_super_or_owner(u, election):
+        pass
+    else:
+        if not VoterStatus.objects.filter(user=u, election=election).exists():
+            return HttpResponseForbidden('Not allowed to export results for this election')
     votes = election.votes.all()
     decrypted = [decrypt_vote(v.encrypted_vote_data, associated_data=str(election.id)) for v in votes]
     tally = {}
@@ -341,12 +493,152 @@ def _is_admin(user):
         return False
 
 
+def _is_super_or_owner(user, election: Election) -> bool:
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    if getattr(user, 'is_superuser', False):
+        return True
+    # Treat the creator as owner regardless of profile role; outer guards restrict to admins
+    return election.created_by_id == user.id
+
+
 @login_required
 def admin_dashboard(request):
     if not _is_admin(request.user):
         return HttpResponseForbidden('Admins only')
-    elections = Election.objects.all()
-    return render(request, 'admin_dashboard.html', {'elections': elections})
+    _sync_election_statuses()
+    # Elections with aggregated stats
+    base_qs = Election.objects.all()
+    # Non-super admins see only their own elections
+    if getattr(request.user, 'is_superuser', False):
+        elections_qs = base_qs
+    else:
+        elections_qs = base_qs.filter(created_by=request.user)
+    elections_qs = (
+        elections_qs
+        .annotate(
+            votes_cast=Count('votes', distinct=True),
+            candidates_count=Count('candidates', distinct=True),
+        )
+        .order_by('-start_time')
+    )
+
+    # Convert to list so we can attach computed fields
+    elections_list = list(elections_qs)
+
+    # Compute per-election turnout percent and low-turnout flag
+    for e in elections_list:
+        # compute eligible from VoterStatus to avoid reverse-name ambiguity
+        eligible = VoterStatus.objects.filter(election=e).count()
+        e.eligible = eligible
+        votes_cast = getattr(e, 'votes_cast', 0) or 0
+        e.turnout_pct = round((votes_cast / eligible * 100), 2) if eligible > 0 else 0
+        e.low_turnout = (eligible > 0 and (votes_cast / eligible) < 0.3 and e.status == 'active')
+
+    # KPI counts
+    total_elections = len(elections_list)
+    counts_by_status = {
+        'pending': len([1 for e in elections_list if e.status == 'pending']),
+        'active': len([1 for e in elections_list if e.status == 'active']),
+        'concluded': len([1 for e in elections_list if e.status == 'concluded']),
+    }
+
+    # Users/Voters metrics
+    voters_total = Profile.objects.filter(role='voter').count()
+    voters_confirmed = Profile.objects.filter(role='voter', is_confirmed=True).count()
+    approvals_pending = Profile.objects.filter(role='voter', is_confirmed=True, is_approved=False).count()
+
+    # Votes today
+    votes_today = Vote.objects.filter(timestamp__date=timezone.now().date()).count()
+
+    # Average turnout across elections with eligible > 0
+    turnouts = []
+    for e in elections_list:
+        eligible = getattr(e, 'eligible', 0) or 0
+        votes_cast = getattr(e, 'votes_cast', 0) or 0
+        if eligible > 0:
+            turnouts.append(votes_cast / eligible)
+    avg_turnout_pct = round((sum(turnouts) / len(turnouts) * 100), 2) if turnouts else 0
+
+    # Ending soon (next 48h)
+    now = timezone.now()
+    # ending soon from the list
+    ending_soon = [e for e in elections_list if e.status == 'active' and e.end_time <= now + timedelta(hours=48)]
+    ending_soon = sorted(ending_soon, key=lambda x: x.end_time)[:6]
+
+    # Votes per hour (last 24h)
+    start = now - timedelta(hours=23)
+    vp = (
+        Vote.objects.filter(timestamp__gte=start)
+        .annotate(h=TruncHour('timestamp'))
+        .values('h')
+        .annotate(n=Count('id'))
+        .order_by('h')
+    )
+    # Build 24 hourly buckets
+    hourly_labels = []
+    hourly_counts = []
+    bucket = {row['h']: row['n'] for row in vp}
+    for i in range(24):
+        t = (start + timedelta(hours=i)).replace(minute=0, second=0, microsecond=0)
+        hourly_labels.append(t.strftime('%H:%M'))
+        hourly_counts.append(bucket.get(t, 0))
+
+    import json
+    chart_labels_json = json.dumps(hourly_labels)
+    chart_values_json = json.dumps(hourly_counts)
+
+    context = {
+    'elections': elections_list,
+        'total_elections': total_elections,
+        'counts_by_status': counts_by_status,
+        'voters_total': voters_total,
+        'voters_confirmed': voters_confirmed,
+        'approvals_pending': approvals_pending,
+        'votes_today': votes_today,
+        'avg_turnout_pct': avg_turnout_pct,
+        'ending_soon': ending_soon,
+        'activity_labels_json': chart_labels_json,
+        'activity_values_json': chart_values_json,
+    }
+    return render(request, 'admin_dashboard.html', context)
+
+
+@login_required
+def admin_election_list(request, status: str):
+    if not _is_admin(request.user):
+        return HttpResponseForbidden('Admins only')
+    _sync_election_statuses()
+    status = (status or '').lower()
+    if status not in {'pending', 'active', 'concluded'}:
+        status = 'active'
+
+    base_qs = Election.objects.filter(status=status)
+    if getattr(request.user, 'is_superuser', False):
+        qs = base_qs
+    else:
+        qs = base_qs.filter(created_by=request.user)
+    qs = (
+        qs
+        .annotate(
+            votes_cast=Count('votes', distinct=True),
+            candidates_count=Count('candidates', distinct=True),
+        )
+        .order_by('-start_time')
+    )
+    elections = list(qs)
+    for e in elections:
+        e.eligible = VoterStatus.objects.filter(election=e).count()
+        vc = getattr(e, 'votes_cast', 0) or 0
+        eg = e.eligible or 0
+        e.turnout_pct = round((vc / eg * 100), 2) if eg > 0 else 0
+
+    status_title = status.capitalize()
+    return render(request, 'admin_election_list.html', {
+        'status': status,
+        'status_title': status_title,
+        'elections': elections,
+    })
 
 
 @login_required
@@ -376,13 +668,22 @@ def create_election(request):
 
             s = parse_utc_field('start_time_utc', form.cleaned_data['start_time'])
             e = parse_utc_field('end_time_utc', form.cleaned_data['end_time'])
-            Election.objects.create(
+            # generate a random publish key for the admin to store
+            import secrets, hashlib
+            publish_key_plain = secrets.token_urlsafe(16)
+            publish_key_hash = hashlib.sha256(publish_key_plain.encode('utf-8')).hexdigest()
+
+            eobj = Election.objects.create(
                 title=form.cleaned_data['title'],
                 description=form.cleaned_data['description'],
                 start_time=s,
                 end_time=e,
+                created_by=request.user,
+                publish_key_hash=publish_key_hash,
             )
-            return redirect('admin_dashboard')
+            messages.warning(request, f"Store this publish key safely: {publish_key_plain}")
+            messages.info(request, 'You will need this key to publish the results.')
+            return redirect('admin_election_list', status='pending')
     else:
         form = ElectionForm()
     return render(request, 'create_election.html', {'form': form})
@@ -393,6 +694,10 @@ def edit_election(request, election_id):
     if not _is_admin(request.user):
         return HttpResponseForbidden('Admins only')
     election = get_object_or_404(Election, pk=election_id)
+    # keep statuses in sync for consistency
+    _sync_election_statuses()
+    if not _is_super_or_owner(request.user, election):
+        return HttpResponseForbidden('Not allowed to edit this election')
     if request.method == 'POST':
         form = ElectionForm(request.POST)
         if form.is_valid():
@@ -434,6 +739,8 @@ def delete_election(request, election_id):
     if not _is_admin(request.user):
         return HttpResponseForbidden('Admins only')
     election = get_object_or_404(Election, pk=election_id)
+    if not _is_super_or_owner(request.user, election):
+        return HttpResponseForbidden('Not allowed to delete this election')
     if request.method == 'POST':
         election.delete()
         return redirect('admin_dashboard')
@@ -449,12 +756,89 @@ def publish_results(request, election_id):
     if not _is_admin(request.user):
         return HttpResponseForbidden('Admins only')
     election = get_object_or_404(Election, pk=election_id)
+    if not _is_super_or_owner(request.user, election):
+        return HttpResponseForbidden('Not allowed to publish this election')
+    is_super = getattr(request.user, 'is_superuser', False)
+    now = timezone.now()
+    is_after_end = now >= election.end_time
+    # Key is required only for early publish (before end time) and only for non-superusers
+    require_key = (not is_after_end) and bool(election.publish_key_hash) and not is_super
     if request.method == 'POST':
-        election.status = 'concluded'
-        election.save()
-        return redirect('admin_dashboard')
-    # For safety, show a confirmation page
-    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish'})
+        # If superuser, bypass key verification entirely
+        if not is_super and not is_after_end:
+            # Block if rate limited
+            if election.publish_blocked_until and timezone.now() < election.publish_blocked_until:
+                messages.error(request, 'Too many failed attempts. Try again later.')
+                return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': require_key, 'bypass': False})
+            # If key exists, verify; else set it on first publish
+            key = (request.POST.get('key') or '').strip()
+            if require_key:
+                if not key:
+                    messages.error(request, 'Publish key is required')
+                    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': True, 'bypass': False})
+                import hashlib
+                key_hash = hashlib.sha256(key.encode('utf-8')).hexdigest()
+                if key_hash != election.publish_key_hash:
+                    # increment attempts and possibly block for 10 minutes after 5 failures
+                    election.publish_attempts = (election.publish_attempts or 0) + 1
+                    if election.publish_attempts >= 5:
+                        election.publish_blocked_until = timezone.now() + timedelta(minutes=10)
+                        election.publish_attempts = 0
+                    election.save(update_fields=['publish_attempts', 'publish_blocked_until'])
+                    messages.error(request, 'Invalid publish key')
+                    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': True, 'bypass': False})
+            else:
+                key_confirm = (request.POST.get('key_confirm') or '').strip()
+                if not key or not key_confirm:
+                    messages.error(request, 'Please provide and confirm a publish key')
+                    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': False, 'bypass': False})
+                if key != key_confirm:
+                    messages.error(request, 'Keys do not match')
+                    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': False, 'bypass': False})
+                import hashlib
+                election.publish_key_hash = hashlib.sha256(key.encode('utf-8')).hexdigest()
+
+    # Passed verification or set a new key; publish results
+    election.status = 'concluded'
+    election.published_at = now
+    election.published_by = request.user
+    # reset attempts on success
+    election.publish_attempts = 0
+    election.publish_blocked_until = None
+    election.save()
+    messages.success(request, 'Results published successfully')
+    return redirect('admin_dashboard')
+    # Show confirmation page with appropriate form state
+    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': require_key, 'bypass': is_super or is_after_end})
+
+
+@login_required
+def rotate_publish_key(request, election_id):
+    if not _is_admin(request.user):
+        return HttpResponseForbidden('Admins only')
+    election = get_object_or_404(Election, pk=election_id)
+    if not _is_super_or_owner(request.user, election):
+        return HttpResponseForbidden('Not allowed to rotate key for this election')
+    if request.method == 'POST':
+        form = PublishKeyRotateForm(request.POST)
+        if form.is_valid():
+            import hashlib
+            # verify current key
+            cur = form.cleaned_data['current_key']
+            cur_hash = hashlib.sha256(cur.encode('utf-8')).hexdigest()
+            if election.publish_key_hash and cur_hash != election.publish_key_hash:
+                messages.error(request, 'Current key is incorrect')
+            else:
+                new_hash = hashlib.sha256(form.cleaned_data['new_key'].encode('utf-8')).hexdigest()
+                election.publish_key_hash = new_hash
+                election.publish_attempts = 0
+                election.publish_blocked_until = None
+                election.save(update_fields=['publish_key_hash', 'publish_attempts', 'publish_blocked_until'])
+                messages.success(request, 'Publish key updated')
+                return redirect('admin_election_list', status=election.status)
+    else:
+        form = PublishKeyRotateForm()
+    return render(request, 'rotate_publish_key.html', {'form': form, 'election': election})
 
 
 @login_required
@@ -462,6 +846,8 @@ def upload_voters(request, election_id):
     if not _is_admin(request.user):
         return HttpResponseForbidden('Admins only')
     election = get_object_or_404(Election, pk=election_id)
+    if not _is_super_or_owner(request.user, election):
+        return HttpResponseForbidden('Not allowed to manage voters for this election')
     if request.method == 'POST':
         form = VoterUploadForm(request.POST, request.FILES)
         if form.is_valid():
@@ -490,6 +876,8 @@ def create_candidate(request, election_id):
     if not _is_admin(request.user):
         return HttpResponseForbidden('Admins only')
     election = get_object_or_404(Election, pk=election_id)
+    if not _is_super_or_owner(request.user, election):
+        return HttpResponseForbidden('Not allowed to manage candidates for this election')
     if request.method == 'POST':
         form = CandidateForm(request.POST)
         if form.is_valid():
@@ -510,6 +898,8 @@ def list_candidates(request, election_id):
     if not _is_admin(request.user):
         return HttpResponseForbidden('Admins only')
     election = get_object_or_404(Election, pk=election_id)
+    if not _is_super_or_owner(request.user, election):
+        return HttpResponseForbidden('Not allowed to view candidates for this election')
     candidates = election.candidates.all()
     # secure decrypt-and-aggregate per candidate
     tally = {c.id: 0 for c in candidates}
@@ -543,6 +933,9 @@ def edit_candidate(request, election_id, candidate_id):
         messages.error(request, 'Admins only: you do not have permission to perform that action')
         return redirect('index')
     candidate = get_object_or_404(Candidate, pk=candidate_id, election__id=election_id)
+    if not _is_super_or_owner(request.user, candidate.election):
+        messages.error(request, 'Not allowed to edit this candidate')
+        return redirect('admin_dashboard')
     if request.method == 'POST':
         form = CandidateForm(request.POST)
         if form.is_valid():
@@ -562,7 +955,27 @@ def delete_candidate(request, election_id, candidate_id):
         messages.error(request, 'Admins only: you do not have permission to perform that action')
         return redirect('index')
     candidate = get_object_or_404(Candidate, pk=candidate_id, election__id=election_id)
+    if not _is_super_or_owner(request.user, candidate.election):
+        messages.error(request, 'Not allowed to delete this candidate')
+        return redirect('admin_dashboard')
     if request.method == 'POST':
         candidate.delete()
         return redirect('list_candidates', election_id=election_id)
     return render(request, 'confirm_delete.html', {'object': candidate, 'type': 'candidate'})
+
+
+# Internal: keep Election.status aligned with time windows
+def _sync_election_statuses():
+    now = timezone.now()
+    # Move pending -> active when start time reached
+    Election.objects.filter(status='pending', start_time__lte=now).update(status='active')
+    # If an active election was edited to a future start, revert to pending
+    Election.objects.filter(status='active', start_time__gt=now).update(status='pending')
+    # Auto-conclude when end time reached (publish automatically)
+    Election.objects.filter(end_time__lte=now).exclude(status='concluded').update(
+        status='concluded',
+        published_at=now,
+        published_by=None,
+        publish_attempts=0,
+        publish_blocked_until=None,
+    )

@@ -31,6 +31,24 @@
     </div>
     <span class="visually-hidden">Loading…</span>
   </div>
+  <script>
+    // Minimal, robust fallback: ensure loader is hidden/removed quickly even if other scripts fail
+    (function(){
+      function killLoader(){
+        var l = document.getElementById('page-loader');
+        if(!l) return;
+        l.classList.add('hidden');
+        setTimeout(function(){ try{ l.parentNode && l.parentNode.removeChild(l); }catch(e){} }, 480);
+      }
+      if(document.readyState === 'complete' || document.readyState === 'interactive'){
+        setTimeout(killLoader, 200);
+      } else {
+        document.addEventListener('DOMContentLoaded', function(){ setTimeout(killLoader, 200); });
+      }
+      // absolute max safety timeout
+      setTimeout(killLoader, 4000);
+    })();
+  </script>
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
     <div class="container">
       <a class="navbar-brand d-flex align-items-center" href="{% url 'index' %}">
@@ -48,6 +66,9 @@
         <ul class="navbar-nav ms-auto align-items-lg-center">
           <li class="nav-item"><a class="nav-link d-flex align-items-center" href="{% url 'index' %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Home</a></li>
           <li class="nav-item"><a class="nav-link d-flex align-items-center" href="{% url 'about' %}"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.2"/><path d="M12 8v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M12 16h.01" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>About</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'how_it_works' %}">How it works</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'social_proof' %}">Social proof</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'contact' %}">Contact</a></li>
           {% if user.is_authenticated %}
             {% if is_admin %}
               <li class="nav-item"><a class="nav-link" href="{% url 'admin_dashboard' %}">Dashboard</a></li>

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}How it works · SafeBallot{% endblock %}
+
+{% block content %}
+<section class="mb-5">
+  <div class="text-center mb-4">
+    <h1 class="display-6">How SafeBallot works</h1>
+    <p class="text-muted">A quick overview of the secure voting flow.</p>
+  </div>
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card elevation-1 h-100">
+        <div class="card-body">
+          <h5>1. Create election</h5>
+          <p>Admins define title, description, start/end times, and candidates.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card elevation-1 h-100">
+        <div class="card-body">
+          <h5>2. Add voters</h5>
+          <p>Upload eligible voters. Each voter gets a ballot assignment when the election starts.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card elevation-1 h-100">
+        <div class="card-body">
+          <h5>3. Cast votes</h5>
+          <p>Voters sign in and cast an encrypted ballot. We store only ciphertext tied to the election.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card elevation-1 h-100">
+        <div class="card-body">
+          <h5>4. Tally</h5>
+          <p>After the election ends, results are decrypted and aggregated. Admins can export CSV.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card elevation-1 h-100">
+        <div class="card-body">
+          <h5>5. Audit</h5>
+          <p>Activity charts and turnout metrics help review participation and detect anomalies.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card elevation-1 h-100">
+        <div class="card-body">
+          <h5>Security</h5>
+          <ul class="small mb-0">
+            <li>Encrypted ballots (per-election associated data)</li>
+            <li>Voter eligibility tracking</li>
+            <li>Results released only after end time</li>
+            <li>Admin approval for new accounts</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

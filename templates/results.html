@@ -2,14 +2,30 @@
 {% block page_icon %}
   <svg class="icon-sm" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 14h-2v-6h2v6zm0-8h-2V6h2v2z" fill="currentColor"/></svg>
 {% endblock %}
+{% block extra_head %}
+<style>
+  /* Strong per-page override so list-group items are readable in dark mode */
+  .theme-dark #resultsList.list-group .list-group-item {
+    background: rgba(255,255,255,0.06) !important;
+    color: #e6eef8 !important;
+    border-color: rgba(255,255,255,0.10) !important;
+  }
+  .theme-dark #resultsList .small,
+  .theme-dark #resultsList .text-muted { color: rgba(230,238,248,0.75) !important; }
+  .theme-dark #resultsList .badge { background: rgba(43,140,255,0.95) !important; }
+  /* keep light mode looking default */
+</style>
+{% endblock %}
 {% block content %}
 <div class="card shadow-sm">
   <div class="card-body">
     <h3 class="card-title">Results: {{ election.title }}</h3>
     <p class="text-muted small">Results were revealed after the election concluded or were published by an admin.</p>
     <div class="row align-items-center">
-    <div class="col-md-8">
-        <canvas id="resultsChart" width="600" height="300"></canvas>
+    <div class="col-md-8" style="min-height:320px">
+        <div class="ratio ratio-16x9">
+          <canvas id="resultsChart"></canvas>
+        </div>
       </div>
       <div class="col-md-4">
         <h6 class="mt-2"><i data-feather="pie-chart" class="icon"></i> Results Summary</h6>
@@ -17,8 +33,8 @@
         <p class="small text-muted">Total votes cast: <strong>{{ total_votes }}</strong></p>
         <p class="small text-muted">Casting percentage: <strong>{{ casting_percentage }}%</strong></p>
 
-        <h4>By candidate</h4>
-        <ul class="list-group">
+  <h4>By candidate</h4>
+  <ul id="resultsList" class="list-group">
           {% for r in results_list %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
               <div>
@@ -51,6 +67,10 @@
   const labels = JSON.parse('{{ chart_labels_json|escapejs }}');
   const data = JSON.parse('{{ chart_values_json|escapejs }}');
   const ctx = document.getElementById('resultsChart').getContext('2d');
+  // detect dark theme to adapt chart colors
+  const isDark = document.documentElement.classList.contains('theme-dark');
+  const axisColor = isDark ? 'rgba(230,238,248,0.6)' : 'rgba(0,0,0,0.6)';
+  const gridColor = isDark ? 'rgba(230,238,248,0.12)' : 'rgba(0,0,0,0.08)';
   new Chart(ctx, {
     type: 'bar',
     data: {
@@ -58,12 +78,22 @@
       datasets: [{
         label: 'Votes',
         data: data,
-        backgroundColor: labels.map((_,i)=>`hsl(${(i*70)%360} 70% 55% / 0.8)`),
-        borderColor: labels.map((_,i)=>`hsl(${(i*70)%360} 70% 45% / 1)`),
+        backgroundColor: labels.map((_,i)=> isDark ? `hsl(${(i*70)%360} 70% 55% / 0.75)` : `hsl(${(i*70)%360} 70% 55% / 0.8)`),
+        borderColor: labels.map((_,i)=> isDark ? `hsl(${(i*70)%360} 70% 65% / 1)` : `hsl(${(i*70)%360} 70% 45% / 1)`),
         borderWidth: 1
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: axisColor } },
+        y: { grid: { color: gridColor }, ticks: { color: axisColor } }
+      },
+      plugins: {
+        legend: { labels: { color: axisColor } }
+      }
+    }
   });
 </script>
 {% endblock %}

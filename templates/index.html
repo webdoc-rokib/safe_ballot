@@ -3,12 +3,12 @@
 {% block title %}Home — SafeBallot{% endblock %}
 
 {% block content %}
+<!-- Hero -->
 <div class="hero rounded-4 p-5 mb-5 text-white shadow-lg">
 	<div class="row align-items-center">
 		<div class="col-md-7">
 			<h1 class="display-5 fw-bold">Secure · Anonymous · Transparent</h1>
-			<p class="lead mb-4">Run student elections confidently — votes are encrypted and anonymous. Admins manage elections and results are revealed only after close.</p>
-
+			<p class="lead mb-4">Run elections confidently — encrypted ballots, anonymous votes, clear results.</p>
 			{% if user.is_authenticated %}
 				<a href="{% url 'voter_dashboard' %}" class="btn btn-light btn-lg me-2">Go to Dashboard</a>
 				{% if is_admin %}
@@ -20,61 +20,132 @@
 			{% endif %}
 		</div>
 		<div class="col-md-5 text-center">
-			<img src="{% static 'img/hero-vote.png' %}" alt="Voting" class="img-fluid" style="max-height:200px;">
+			<img src="{% static 'img/hero-vote.png' %}" alt="Voting" class="img-fluid" style="max-height:220px;">
 		</div>
 	</div>
 </div>
 
-<div class="row mb-5">
-	<div class="col-md-6">
-		<div class="card h-100 shadow-sm p-3">
-			<h4><svg class="icon-sm icon-bounce" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm0 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zM11 7v6l4 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> About SafeBallot</h4>
-			<p class="small">SafeBallot provides a privacy-first voting experience for campus organizations. Votes are AES-256 encrypted and cannot be linked to voters. Admins manage eligibility and conclude elections to reveal results.</p>
-			<p class="small mb-0">Built with Django, PostgreSQL, and modern front-end tools.</p>
-		</div>
+<!-- Counters -->
+<div class="row g-3 mb-4">
+	<div class="col-6 col-md-3"><div class="card kpi-card p-3"><div class="kpi-label">Elections</div><div class="kpi-value">{{ total_elections }}</div></div></div>
+	<div class="col-6 col-md-3"><div class="card kpi-card p-3"><div class="kpi-label">Total votes</div><div class="kpi-value">{{ total_votes }}</div></div></div>
+	<div class="col-6 col-md-3"><div class="card kpi-card p-3"><div class="kpi-label">Avg turnout</div><div class="kpi-value">{{ avg_turnout_pct }}%</div></div></div>
 	</div>
 
-	<div class="col-md-6">
-		<div class="card h-100 shadow-sm p-3">
-			<h4><svg class="icon-sm icon-bounce" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> How it works</h4>
-			<ul class="small mb-0">
-				<li>Admins create elections and upload eligible voters.</li>
-				<li>Voters sign in and cast one encrypted vote per election.</li>
-				<li>Results are decrypted only after the election ends.</li>
-			</ul>
+<div class="row g-4">
+	<!-- Active elections -->
+	<div class="col-12 col-lg-8">
+		<div class="d-flex align-items-center justify-content-between mb-2">
+			<h3 class="mb-0 d-flex align-items-center"><svg class="icon-sm icon-bounce" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v6m0 8v6M4 8l4 4M20 8l-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Active elections</h3>
+			<a class="btn btn-outline-secondary btn-sm" href="#upcoming">See upcoming</a>
 		</div>
-	</div>
-</div>
-
-<div class="row">
-	<div class="col-md-8">
-	<h3><svg class="icon-sm icon-bounce" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2v6m0 8v6M4 8l4 4M20 8l-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Latest elections</h3>
 		<div class="row gy-3">
-			{% for election in elections %}
+			{% for e in elections %}
 				<div class="col-md-6">
 					<div class="card h-100 p-3 shadow-sm hover-lift">
-						<div class="card-body">
-							<h5 class="card-title">{{ election.title }}</h5>
-							<p class="card-text small text-muted">Starts: {{ election.start_time }} • Ends: {{ election.end_time }}</p>
-							<a href="{% url 'vote' election.id %}" class="btn btn-primary btn-sm">View</a>
+						<div class="d-flex justify-content-between align-items-start">
+							<div>
+								<h5 class="mb-1">{{ e.title }}</h5>
+								<div class="small text-muted">Ends <span data-countdown="{{ e.end_time|date:'c' }}">{{ e.end_time }}</span></div>
+							</div>
+							<span class="badge rounded-pill text-bg-success">Active</span>
+						</div>
+						<div class="mt-2 d-flex flex-wrap gap-2">
+							<span class="badge rounded-pill text-bg-info">{{ e.candidates_count }} candidates</span>
+							<span class="badge rounded-pill text-bg-primary">{{ e.votes_cast }} votes</span>
+						</div>
+						<div class="mt-3">
+							<a href="{% url 'vote' e.id %}" class="btn btn-primary btn-sm">Open</a>
 						</div>
 					</div>
 				</div>
 			{% empty %}
-				<div class="col-12">
-					<div class="alert alert-info">No elections available.</div>
+				<div class="col-12"><div class="alert alert-info">No active elections at the moment.</div></div>
+			{% endfor %}
+		</div>
+
+		<!-- Upcoming -->
+		<h3 id="upcoming" class="mt-4">Upcoming</h3>
+		<div class="row gy-3">
+			{% for u in upcoming %}
+				<div class="col-md-6">
+					<div class="card h-100 p-3 shadow-sm hover-lift">
+						<div class="d-flex justify-content-between align-items-start">
+							<div>
+								<h5 class="mb-1">{{ u.title }}</h5>
+								<div class="small text-muted">Starts {{ u.start_time }}</div>
+							</div>
+							<span class="badge rounded-pill text-bg-secondary">Pending</span>
+						</div>
+						<div class="mt-3">
+							<span class="small text-muted">Get notified when it starts.</span>
+						</div>
+					</div>
 				</div>
+			{% empty %}
+				<div class="col-12"><div class="alert alert-secondary">No upcoming elections.</div></div>
 			{% endfor %}
 		</div>
 	</div>
 
-	<div class="col-md-4">
-	<h4><svg class="icon-sm icon-bounce" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21 8V7l-3 2-2-1-3 2-3-2-2 1-3-2v1l3 2v7h12v-7l3-2z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Contact</h4>
+	<!-- Sidebar: Security + Recent concluded + Contact -->
+	<div class="col-12 col-lg-4">
+		<div class="card p-3 shadow-sm mb-3">
+			<h5><svg class="icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l7 4v6c0 5-4 9-7 10-3-1-7-5-7-10V6l7-4z" fill="currentColor"/></svg> Why SafeBallot?</h5>
+			<ul class="small mb-0">
+				<li>Anonymous, encrypted ballots.</li>
+				<li>Tamper‑evident results export.</li>
+				<li>Admin approvals for voter access.</li>
+				<li>Dark‑mode friendly and mobile‑first.</li>
+			</ul>
+		</div>
+
+		<div class="card p-3 shadow-sm mb-3">
+			<h5><svg class="icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M7 17h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> Recently concluded</h5>
+			{% if concluded_recent %}
+				<ul class="list-group list-group-flush">
+					{% for c in concluded_recent %}
+						<li class="list-group-item d-flex justify-content-between align-items-center">
+							<span class="small">{{ c.title }}</span>
+							<a class="btn btn-sm btn-outline-secondary" href="{% url 'results' c.id %}">Results</a>
+						</li>
+					{% endfor %}
+				</ul>
+			{% else %}
+				<div class="small text-muted">No concluded elections yet.</div>
+			{% endif %}
+		</div>
+
 		<div class="card p-3 shadow-sm small">
+			<h5><svg class="icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8V7l-3 2-2-1-3 2-3-2-2 1-3-2v1l3 2v7h12v-7l3-2z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Contact</h5>
 			<p class="mb-1"><strong>Office:</strong> Dhaka, Bangladesh</p>
 			<p class="mb-1"><strong>Email:</strong> <a class="link-blue" href="mailto:mdrokibulislam.nub@gmail.com">mdrokibulislam.nub@gmail.com</a></p>
 			<p class="mb-0"><strong>Phone:</strong> +880 1518-915722</p>
 		</div>
 	</div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+	// Lightweight countdown for elements with data-countdown (ISO8601 datetime)
+	(function(){
+		function tick(){
+			const els = document.querySelectorAll('[data-countdown]');
+			const now = new Date();
+			els.forEach(el => {
+				const end = new Date(el.getAttribute('data-countdown'));
+				const ms = end - now;
+				if (isNaN(ms)) return;
+				if (ms <= 0){ el.textContent = 'ended'; return; }
+				const hrs = Math.floor(ms/3600000);
+				const mins = Math.floor((ms%3600000)/60000);
+				el.textContent = hrs + 'h ' + mins + 'm';
+			});
+		}
+		tick();
+		setInterval(tick, 60000);
+	})();
+</script>
 {% endblock %}

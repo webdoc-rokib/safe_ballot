@@ -2,12 +2,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // simple fade-in for cards
   document.querySelectorAll('.card').forEach((el, i) => {
     el.style.opacity = 0;
-    el.style.transform = 'translateY(8px)';
+    el.style.transform = 'translateY(6px)';
+    const delay = Math.min(20 * i, 240); // keep total stagger short
     setTimeout(() => {
-      el.style.transition = 'opacity 300ms ease, transform 300ms ease';
+      el.style.transition = 'opacity 240ms ease, transform 240ms ease';
       el.style.opacity = 1;
       el.style.transform = 'translateY(0)';
-    }, 60 * i);
+      // clean inline styles to avoid stacking contexts
+      setTimeout(() => { el.style.transform = ''; el.style.transition = ''; }, 300);
+    }, delay);
   });
 
   // button micro-interaction
@@ -16,6 +19,13 @@ document.addEventListener('DOMContentLoaded', function () {
     btn.addEventListener('mouseup', () => btn.classList.remove('pressed'));
     btn.addEventListener('mouseleave', () => btn.classList.remove('pressed'));
   });
+
+  // set progress widths from data-pct to avoid template inline CSS issues
+  document.querySelectorAll('.js-progress[data-pct]')
+    .forEach(el => {
+      const pct = parseFloat(el.getAttribute('data-pct')) || 0;
+      el.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    });
 
   // replace feather icons if available
   if (window.feather) {
