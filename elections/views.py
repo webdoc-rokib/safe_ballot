@@ -157,11 +157,41 @@ def contact_page(request):
         if form.is_valid():
             cd = form.cleaned_data
             subject = f"[SafeBallot Contact] {cd['subject']}"
-            body = f"From: {cd['name']} <{cd['email']}>)\n\n{cd['message']}"
+            body = f"From: {cd['name']} <{cd['email']}>\n\n{cd['message']}"
+            # Persist feedback for admin review regardless of email backend
             try:
-                send_mail(subject, body,
-                          settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@example.com',
-                          [getattr(settings, 'CONTACT_RECEIVER_EMAIL', 'noreply@example.com')])
+                from .models import Feedback
+                Feedback.objects.create(
+                    user=request.user if request.user.is_authenticated else None,
+                    name=cd['name'],
+                    email=cd['email'],
+                    subject=cd['subject'],
+                    message=cd['message'],
+                )
+            except Exception:
+                # Fail silently; email path below still attempts notification
+                pass
+            try:
+                # Notify all active superusers with a valid email; fall back to CONTACT_RECEIVER_EMAIL if provided
+                superuser_emails = list(
+                    User.objects.filter(is_superuser=True, is_active=True)
+                    .exclude(email='')
+                    .values_list('email', flat=True)
+                )
+                fallback_email = getattr(settings, 'CONTACT_RECEIVER_EMAIL', None)
+                if fallback_email and fallback_email not in superuser_emails:
+                    superuser_emails.append(fallback_email)
+                recipients = superuser_emails or [fallback_email] if fallback_email else []
+                # If no recipients configured, still attempt to send to a neutral address to exercise backend
+                if not recipients:
+                    recipients = ['noreply@example.com']
+
+                send_mail(
+                    subject,
+                    body,
+                    settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@example.com',
+                    recipients,
+                )
                 sent = True
                 messages.success(request, 'Thanks! Your message has been sent.')
             except Exception:

@@ -62,3 +62,19 @@ class VoterStatus(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - {self.election.title} - voted={self.has_voted}'
+
+
+class Feedback(models.Model):
+    """Stores contact/feedback submissions for admin review and audit."""
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    name = models.CharField(max_length=120)
+    email = models.EmailField()
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Feedback: {self.subject} by {self.name}'
