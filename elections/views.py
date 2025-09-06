@@ -799,53 +799,59 @@ def publish_results(request, election_id):
     is_after_end = now >= election.end_time
     # Key is required only for early publish (before end time) and only for non-superusers
     require_key = (not is_after_end) and bool(election.publish_key_hash) and not is_super
-    if request.method == 'POST':
-        # If superuser, bypass key verification entirely
-        if not is_super and not is_after_end:
-            # Block if rate limited
-            if election.publish_blocked_until and timezone.now() < election.publish_blocked_until:
-                messages.error(request, 'Too many failed attempts. Try again later.')
-                return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': require_key, 'bypass': False})
-            # If key exists, verify; else set it on first publish
-            key = (request.POST.get('key') or '').strip()
-            if require_key:
-                if not key:
-                    messages.error(request, 'Publish key is required')
-                    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': True, 'bypass': False})
-                import hashlib
-                key_hash = hashlib.sha256(key.encode('utf-8')).hexdigest()
-                if key_hash != election.publish_key_hash:
-                    # increment attempts and possibly block for 10 minutes after 5 failures
-                    election.publish_attempts = (election.publish_attempts or 0) + 1
-                    if election.publish_attempts >= 5:
-                        election.publish_blocked_until = timezone.now() + timedelta(minutes=10)
-                        election.publish_attempts = 0
-                    election.save(update_fields=['publish_attempts', 'publish_blocked_until'])
-                    messages.error(request, 'Invalid publish key')
-                    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': True, 'bypass': False})
-            else:
-                key_confirm = (request.POST.get('key_confirm') or '').strip()
-                if not key or not key_confirm:
-                    messages.error(request, 'Please provide and confirm a publish key')
-                    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': False, 'bypass': False})
-                if key != key_confirm:
-                    messages.error(request, 'Keys do not match')
-                    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': False, 'bypass': False})
-                import hashlib
-                election.publish_key_hash = hashlib.sha256(key.encode('utf-8')).hexdigest()
 
-    # Passed verification or set a new key; publish results
+    # GET -> show confirmation (never publish on GET)
+    if request.method != 'POST':
+        return render(request, 'confirm_delete.html', {
+            'object': election,
+            'type': 'publish',
+            'require_key': require_key,
+            'bypass': (is_super or is_after_end),
+        })
+
+    # POST -> verify (if required) then publish
+    if not (is_super or is_after_end):
+        # Block if rate limited
+        if election.publish_blocked_until and timezone.now() < election.publish_blocked_until:
+            messages.error(request, 'Too many failed attempts. Try again later.')
+            return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': require_key, 'bypass': False})
+        key = (request.POST.get('key') or '').strip()
+        # If we already have a key hash, verify it
+        if bool(election.publish_key_hash):
+            if not key:
+                messages.error(request, 'Publish key is required')
+                return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': True, 'bypass': False})
+            import hashlib
+            key_hash = hashlib.sha256(key.encode('utf-8')).hexdigest()
+            if key_hash != election.publish_key_hash:
+                election.publish_attempts = (election.publish_attempts or 0) + 1
+                if election.publish_attempts >= 5:
+                    election.publish_blocked_until = timezone.now() + timedelta(minutes=10)
+                    election.publish_attempts = 0
+                election.save(update_fields=['publish_attempts', 'publish_blocked_until'])
+                messages.error(request, 'Invalid publish key')
+                return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': True, 'bypass': False})
+        else:
+            # First-time publish with no key set: allow setting one
+            key_confirm = (request.POST.get('key_confirm') or '').strip()
+            if not key or not key_confirm:
+                messages.error(request, 'Please provide and confirm a publish key')
+                return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': False, 'bypass': False})
+            if key != key_confirm:
+                messages.error(request, 'Keys do not match')
+                return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': False, 'bypass': False})
+            import hashlib
+            election.publish_key_hash = hashlib.sha256(key.encode('utf-8')).hexdigest()
+
+    # Passed verification or bypass; publish results
     election.status = 'concluded'
     election.published_at = now
     election.published_by = request.user
-    # reset attempts on success
     election.publish_attempts = 0
     election.publish_blocked_until = None
     election.save()
     messages.success(request, 'Results published successfully')
     return redirect('admin_dashboard')
-    # Show confirmation page with appropriate form state
-    return render(request, 'confirm_delete.html', {'object': election, 'type': 'publish', 'require_key': require_key, 'bypass': is_super or is_after_end})
 
 
 @login_required
