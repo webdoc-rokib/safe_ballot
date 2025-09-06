@@ -92,6 +92,12 @@ body.bg-gradient{
   color: #e6eef8 !important;
   border-color: rgba(255,255,255,0.08) !important;
 }
+.theme-dark .feedback-panel .list-group {
+  /* ensure Bootstrap uses dark palette for this list */
+  --bs-list-group-bg: rgba(255,255,255,0.06);
+  --bs-list-group-color: #e6eef8;
+  --bs-list-group-border-color: rgba(255,255,255,0.08);
+}
 .theme-dark .feedback-panel .list-group-item .small,
 .theme-dark .feedback-panel .list-group-item .text-muted,
 .theme-dark .feedback-panel .list-group-item .text-body-secondary {
@@ -100,6 +106,12 @@ body.bg-gradient{
 .theme-dark .feedback-panel .list-group-item:hover {
   background: rgba(255,255,255,0.09) !important;
 }
+/* card and link colors inside feedback panel */
+.theme-dark .feedback-panel { background: rgba(255,255,255,0.03) !important; }
+.theme-dark .feedback-panel .card-body, 
+.theme-dark .feedback-panel h5 { color: #e6eef8 !important; }
+.theme-dark .feedback-panel a { color: rgba(230,238,248,0.9) !important; }
+.theme-dark .feedback-panel a:hover { color: #ffffff !important; }
 
 /* Contributors panel */
 .contributors .card { border: none; background: rgba(255,255,255,0.02); }
