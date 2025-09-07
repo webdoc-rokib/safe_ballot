@@ -372,17 +372,7 @@ def results_view(request, election_id):
     concluded = (timezone.now() >= election.end_time or election.status == 'concluded')
     if not concluded:
         return HttpResponseForbidden('Results are not available until election has concluded')
-    user = request.user
-    if not user.is_authenticated:
-        return HttpResponseForbidden('Sign in to view results')
-    if getattr(user, 'is_superuser', False):
-        pass
-    elif _is_super_or_owner(user, election):
-        pass
-    else:
-        # Voters may view only if eligible for this election
-        if not VoterStatus.objects.filter(user=user, election=election).exists():
-            return HttpResponseForbidden('You are not eligible to view results for this election')
+    # After conclusion, results are public
 
     votes = election.votes.all()
     decrypted = [decrypt_vote(v.encrypted_vote_data, associated_data=str(election.id)) for v in votes]
@@ -488,13 +478,7 @@ def export_results_csv(request, election_id):
     election = get_object_or_404(Election, pk=election_id)
     if timezone.now() < election.end_time:
         return HttpResponseForbidden('Results are not available until election has concluded')
-    # Visibility per role
-    u = request.user
-    if getattr(u, 'is_superuser', False) or _is_super_or_owner(u, election):
-        pass
-    else:
-        if not VoterStatus.objects.filter(user=u, election=election).exists():
-            return HttpResponseForbidden('Not allowed to export results for this election')
+    # After conclusion, allow export publicly
     votes = election.votes.all()
     decrypted = [decrypt_vote(v.encrypted_vote_data, associated_data=str(election.id)) for v in votes]
     tally = {}
@@ -528,6 +512,12 @@ def _is_super_or_owner(user, election: Election) -> bool:
         return False
     if getattr(user, 'is_superuser', False):
         return True
+    # If election has no explicit owner, allow admins to act
+    try:
+        if election.created_by_id is None and _is_admin(user):
+            return True
+    except Exception:
+        pass
     # Treat the creator as owner regardless of profile role; outer guards restrict to admins
     return election.created_by_id == user.id
 
@@ -772,11 +762,12 @@ def edit_election(request, election_id):
 
 @login_required
 def delete_election(request, election_id):
-    if not _is_admin(request.user):
-        return HttpResponseForbidden('Admins only')
+    # Only superusers can delete elections, and only after they are concluded
+    if not getattr(request.user, 'is_superuser', False):
+        return HttpResponseForbidden('Superusers only')
     election = get_object_or_404(Election, pk=election_id)
-    if not _is_super_or_owner(request.user, election):
-        return HttpResponseForbidden('Not allowed to delete this election')
+    if election.status != 'concluded':
+        return HttpResponseForbidden('You can only delete a concluded election')
     if request.method == 'POST':
         election.delete()
         return redirect('admin_dashboard')

@@ -36,6 +36,11 @@
                     <a class="btn btn-sm btn-warning" href="{% url 'publish_results' e.id %}">Publish</a>
                   {% else %}
                     <a class="btn btn-sm btn-success" href="{% url 'results' e.id %}">Results</a>
+                    {% if user.is_superuser %}
+                      <form method="post" action="{% url 'delete_election' e.id %}" style="display:inline-block">{% csrf_token %}
+                        <button class="btn btn-sm btn-danger" onclick="return confirm('Delete this concluded election? This cannot be undone.')">Delete</button>
+                      </form>
+                    {% endif %}
                   {% endif %}
                 {% else %}
                   <span class="badge text-bg-secondary">View only</span>
